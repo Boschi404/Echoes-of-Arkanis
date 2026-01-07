@@ -90,34 +90,34 @@ class Ship {
         this.mesh.add(this.interior);
         this.interior.visible = false;
 
-        // Internal Floor
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 2.5), darkHullMat);
+        // Internal Floor (Smaller)
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 2.2), darkHullMat);
         floor.position.set(0, -0.6, -1.3);
         this.interior.add(floor);
 
-        // Side Walls
-        const wallGeo = new THREE.BoxGeometry(0.1, 1.2, 2.2);
+        // Side Walls (Lowered)
+        const wallGeo = new THREE.BoxGeometry(0.05, 0.8, 2.2);
         const wallL = new THREE.Mesh(wallGeo, darkHullMat);
-        wallL.position.set(-0.8, 0, -1.3);
+        wallL.position.set(-0.6, -0.2, -1.3);
         this.interior.add(wallL);
 
         const wallR = new THREE.Mesh(wallGeo, darkHullMat);
-        wallR.position.set(0.8, 0, -1.3);
+        wallR.position.set(0.6, -0.2, -1.3);
         this.interior.add(wallR);
 
-        // Dashboard
-        const dash = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.6), darkHullMat);
-        dash.position.set(0, -0.3, -2.1);
+        // Dashboard (Lowered)
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.4, 0.5), darkHullMat);
+        dash.position.set(0, -0.4, -2.1);
         this.interior.add(dash);
 
         // Seat
-        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.6), darkHullMat);
-        seat.position.set(0, -0.35, -1.3);
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.5), darkHullMat);
+        seat.position.set(0, -0.4, -1.3);
         this.interior.add(seat);
 
         // Stronger Internal Lighting
-        this.cockpitLight = new THREE.PointLight(0x00FFFF, 5, 10); // More intensity
-        this.cockpitLight.position.set(0, 0.8, -1.2);
+        this.cockpitLight = new THREE.PointLight(0x00FFFF, 4, 8);
+        this.cockpitLight.position.set(0, 0.6, -1.2);
         this.interior.add(this.cockpitLight);
 
         // Instrument Texture
@@ -132,9 +132,10 @@ class Ship {
             blending: THREE.AdditiveBlending
         });
 
-        const hud = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), screenMat);
-        hud.position.set(0, 0.3, -2.3); // Adjusted Z
-        hud.rotation.x = -0.1;
+        // Compact HUD (Positioned lower, doesn't block horizon)
+        const hud = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.4), screenMat);
+        hud.position.set(0, -0.05, -2.0);
+        hud.rotation.x = -0.3; // Tilted towards pilot
         this.interior.add(hud);
 
 
