@@ -300,39 +300,48 @@ class Game {
             const brakingDistanceNeeded = (relativeSpeed * relativeSpeed) / (2 * brakeAcc);
             const brakingThreshold = targetParkDist + brakingDistanceNeeded + safetyBuffer;
 
-            if (dot > 0.95) { // Slightly more lenient alignment for the throttle
+            if (dot > 0.95) {
+                const distToPark = distToSurface - targetParkDist;
+
                 if (distToSurface > brakingThreshold) {
-                    // CRUISE/ACCELERATION PHASE
+                    // CRUISE PHASE: Gradually reach max cruise speed
                     if (relativeSpeed < maxCruiseSpeed) {
-                        this.ship.velocity.addScaledVector(fwd, 0.05);
-                        this.ship.updateThruster(1.0, t);
+                        const accelFactor = Math.min(1, (maxCruiseSpeed - relativeSpeed) / 50);
+                        this.ship.velocity.addScaledVector(fwd, 0.05 * accelFactor);
+                        this.ship.updateThruster(accelFactor, t);
                     } else {
                         this.ship.updateThruster(0, t);
                     }
-                } else if (distToSurface > targetParkDist) {
-                    // BRAKING PHASE (Mandatory)
-                    const brakeVec = this.ship.velocity.clone().normalize().negate();
-                    this.ship.velocity.addScaledVector(brakeVec, brakeAcc);
-                    this.ship.updateThruster(0.6, t);
+                } else if (distToPark > 10) {
+                    // SMOOTH BRAKING PHASE
+                    // Calculate desired speed based on distance remaining to park
+                    const speedRatio = Math.max(0, distToPark / brakingThreshold);
+                    const targetSpeed = maxCruiseSpeed * speedRatio;
+
+                    if (relativeSpeed > targetSpeed) {
+                        const brakeVec = this.ship.velocity.clone().normalize().negate();
+                        this.ship.velocity.addScaledVector(brakeVec, brakeAcc);
+                        this.ship.updateThruster(0.3 + (relativeSpeed / maxCruiseSpeed) * 0.7, t);
+                    } else {
+                        this.ship.updateThruster(0, t);
+                    }
                 } else {
-                    // PARKING ZONE
-                    this.ship.velocity.multiplyScalar(0.75); // Slightly stronger stabilization
-                    if (this.ship.velocity.length() < 0.1) this.ship.velocity.set(0, 0, 0);
+                    // PARKING STABILIZATION (Smooth transition)
+                    const damping = Math.max(0.85, 1 - (0.1 / (distToSurface + 1))); // Less aggressive than 0.75
+                    this.ship.velocity.multiplyScalar(damping);
+                    if (this.ship.velocity.length() < 0.2) this.ship.velocity.set(0, 0, 0);
                     this.ship.updateThruster(0, t);
 
-                    // Corrective drift
-                    const distError = distToSurface - targetParkDist;
-                    if (Math.abs(distError) > 10) {
-                        const correctionDir = distError > 0 ? toRealT : toRealT.clone().negate();
-                        this.ship.velocity.addScaledVector(correctionDir, 0.01);
-                    }
+                    // Gentle corrective drift
+                    const correctionPower = Math.min(0.02, Math.abs(distToPark) * 0.0001);
+                    const correctionDir = distToPark > 0 ? toRealT : toRealT.clone().negate();
+                    this.ship.velocity.addScaledVector(correctionDir, correctionPower);
                 }
             } else {
                 this.ship.updateThruster(0, t);
-                // Emergency brake if very close but not aligned
                 if (distToSurface < brakingThreshold && relativeSpeed > 50) {
                     const brakeVec = this.ship.velocity.clone().normalize().negate();
-                    this.ship.velocity.addScaledVector(brakeVec, brakeAcc);
+                    this.ship.velocity.addScaledVector(brakeVec, brakeAcc * 1.5);
                 }
             }
         }
