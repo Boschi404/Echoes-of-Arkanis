@@ -286,9 +286,9 @@ class Game {
         // 3. AP THROTTLE & PARKING LOGIC (REWORKED)
         if (this.input.isAutopilot) {
             const shipPos = this.ship.mesh.position;
-            // IMPORTANT: Use ACTUAL current position for collision distance, 
-            // but keep using predictedPos for the target vector (toT).
-            const realTargetPos = this.lockedTarget.position;
+            // IMPORTANT: Use ACTUAL current world position for collision distance
+            const realTargetPos = new THREE.Vector3();
+            this.lockedTarget.getWorldPosition(realTargetPos);
             const distToCenterReal = shipPos.distanceTo(realTargetPos);
             const planetRadius = this.lockedTarget.userData.radius;
             const distToSurface = distToCenterReal - planetRadius;
@@ -424,6 +424,11 @@ class Game {
 
     handleStandardMode(t, currentSpeed) {
         document.getElementById('map-label').style.display = 'none';
+
+        // Fix: Hide map pointer when not in map mode
+        const mapPointer = document.getElementById('map-pointer');
+        if (mapPointer) mapPointer.style.display = 'none';
+
         document.getElementById('hud-container').style.display = 'grid';
         document.getElementById('crosshair').style.display = 'block';
 
