@@ -9,6 +9,7 @@ class Game {
 
         this.lockedTarget = null;
         this.camState = { fov: 75, mode: 'third' };
+        this.mapState = { targetPivot: new THREE.Vector3(0, 0, 0), distance: 800000, phi: Math.PI / 3, theta: 0 };
 
         this.init();
         this.animate();
@@ -60,7 +61,7 @@ class Game {
         if (!this.input.isPlaying) return;
 
         const t = Date.now();
-        this.solarSystem.update(t);
+        this.solarSystem.update(t, this.input.isMapOpen);
 
         const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.ship.mesh.quaternion);
         const currentSpeed = this.ship.velocity.length();
@@ -338,19 +339,52 @@ class Game {
     }
 
     handleMapMode() {
-        const camPos = new THREE.Vector3(0, 1000000, 0);
-        this.sceneManager.camera.position.lerp(camPos, 0.05);
-        this.sceneManager.camera.lookAt(0, 0, 0);
-        this.ui.updateMapPointer(this.ship.mesh.position);
+        // 1. INPUT FOR MAP NAVIGATION
+        const scrollSens = 0.15;
+        const dragSens = 0.005;
 
+        // Zoom (Distance)
+        if (this.input.keys['Equal'] || this.input.keys['NumpadAdd']) this.mapState.distance *= (1 - scrollSens);
+        if (this.input.keys['Minus'] || this.input.keys['NumpadSubtract']) this.mapState.distance *= (1 + scrollSens);
+        this.mapState.distance = Math.max(50000, Math.min(2000000, this.mapState.distance));
+
+        // Pan/Rotate logic
+        if (this.input.mouse.clicked) {
+            // Very simple rotation for now based on mouse movement delta would be complex without tracking prev mouse
+            // Let's use keys for rotation to be safer in this step
+            if (this.input.keys['ArrowLeft']) this.mapState.theta -= 0.05;
+            if (this.input.keys['ArrowRight']) this.mapState.theta += 0.05;
+            if (this.input.keys['ArrowUp']) this.mapState.phi -= 0.05;
+            if (this.input.keys['ArrowDown']) this.mapState.phi += 0.05;
+            this.mapState.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, this.mapState.phi));
+        }
+
+        // 2. CAMERA POSITIONING (Spherical Coordinates)
+        const x = this.mapState.distance * Math.sin(this.mapState.phi) * Math.cos(this.mapState.theta);
+        const y = this.mapState.distance * Math.cos(this.mapState.phi);
+        const z = this.mapState.distance * Math.sin(this.mapState.phi) * Math.sin(this.mapState.theta);
+
+        const targetPos = new THREE.Vector3(x, y, z).add(this.mapState.targetPivot);
+        this.sceneManager.camera.position.lerp(targetPos, 0.1);
+        this.sceneManager.camera.lookAt(this.mapState.targetPivot);
+
+        // 3. SELECTION LOGIC
         const ray = new THREE.Raycaster();
         ray.setFromCamera(new THREE.Vector2(this.input.mouse.x, this.input.mouse.y), this.sceneManager.camera);
-        const hits = ray.intersectObjects(this.solarSystem.planets);
 
-        if (hits.length > 0) {
-            const planet = hits[0].object;
+        // Intersect markers first
+        const markers = this.solarSystem.planets.map(p => p.userData.marker).filter(m => m);
+        const markerHits = ray.intersectObjects(markers);
+
+        const planetsToTarget = this.solarSystem.planets;
+        const planetHits = ray.intersectObjects(planetsToTarget);
+
+        if (markerHits.length > 0 || planetHits.length > 0) {
+            const hit = markerHits.length > 0 ? markerHits[0] : planetHits[0];
+            const planet = markerHits.length > 0 ? hit.object.parentPlanet : hit.object;
+
             this.ui.showPlanetTooltip(planet, this.input.mouse);
-            if (planet.material.emissive) planet.material.emissiveIntensity = 8;
+
             if (this.input.mouse.clicked) {
                 this.lockedTarget = planet;
                 this.input.isTracking = true;
@@ -359,11 +393,9 @@ class Game {
             }
         } else {
             this.ui.showPlanetTooltip(null);
-            this.solarSystem.planets.forEach(p => {
-                if (p.userData.light) p.material.emissiveIntensity = 5;
-                else if (p.material.emissive) p.material.emissiveIntensity = 0;
-            });
         }
+
+        this.ui.updateMapPointer(this.ship.mesh.position, this.sceneManager.camera, this.mapState.targetPivot);
         document.getElementById('map-label').style.display = 'block';
         document.getElementById('hud-container').style.display = 'grid';
         document.getElementById('crosshair').style.display = 'none';

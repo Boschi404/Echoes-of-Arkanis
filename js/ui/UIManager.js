@@ -60,12 +60,17 @@ class UIManager {
         }
     }
 
-    updateMapPointer(shipPos) {
+    updateMapPointer(shipPos, camera, targetPivot) {
         let pointer = document.getElementById('map-pointer');
         if (!pointer) {
             pointer = document.createElement('div');
             pointer.id = 'map-pointer';
-            pointer.innerHTML = '<div style="width:12px; height:12px; border:2px solid var(--cyan); border-radius:50%; box-shadow:0 0 10px var(--cyan); background:rgba(0,0,0,0.5)"></div>';
+            pointer.innerHTML = `
+                <div style="width:20px; height:20px; border:2px solid var(--cyan); border-radius:50%; box-shadow:0 0 15px var(--cyan); display:flex; align-items:center; justify-content:center;">
+                    <div style="width:4px; height:4px; background:white; border-radius:50%"></div>
+                </div>
+                <div style="color:var(--cyan); font-size:0.6rem; margin-top:5px; text-align:center; letter-spacing:1px; font-weight:bold; text-shadow:0 0 5px black">NAVE</div>
+            `;
             pointer.style.position = 'absolute';
             pointer.style.transform = 'translate(-50%, -50%)';
             pointer.style.pointerEvents = 'none';
@@ -73,13 +78,16 @@ class UIManager {
             document.body.appendChild(pointer);
         }
 
-        const mapScale = 0.00045;
-        const x = window.innerWidth / 2 + shipPos.x * mapScale;
-        const y = window.innerHeight / 2 + shipPos.z * mapScale;
+        // Project 3D position to 2D
+        const p = shipPos.clone().project(camera);
+        const x = (p.x + 1) * window.innerWidth / 2;
+        const y = (-p.y + 1) * window.innerHeight / 2;
+
+        const isVisible = p.z < 1 && p.x >= -1.1 && p.x <= 1.1 && p.y >= -1.1 && p.y <= 1.1;
 
         pointer.style.left = `${x}px`;
         pointer.style.top = `${y}px`;
-        pointer.style.display = 'block';
+        pointer.style.display = isVisible ? 'block' : 'none';
     }
 
     showPlanetTooltip(planet, mouse) {

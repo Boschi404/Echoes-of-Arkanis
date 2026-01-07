@@ -11,7 +11,21 @@ class SolarSystem {
         this.scene = scene;
         this.planets = [];
         this.sun = null;
+        this.markerTexture = this.createMarkerTexture();
         this.createSolarSystem();
+    }
+
+    createMarkerTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(0, 243, 255, 1)');
+        grad.addColorStop(0.3, 'rgba(0, 243, 255, 0.5)');
+        grad.addColorStop(1, 'rgba(0, 243, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        return new THREE.CanvasTexture(canvas);
     }
 
     createPlanetTexture(color) {
@@ -107,15 +121,38 @@ class SolarSystem {
                 group.add(mesh);
                 this.planets.push(mesh);
             }
+
+            // ADD MARKER FOR MAP SELECTION
+            const markerMat = new THREE.SpriteMaterial({
+                map: this.markerTexture,
+                color: 0xffffff,
+                transparent: true,
+                depthTest: false,
+                sizeAttenuation: false
+            });
+            const marker = new THREE.Sprite(markerMat);
+            marker.scale.set(0.02, 0.02, 1);
+            marker.userData.isMarker = true;
+            marker.visible = false;
+
+            // Link marker to its planet for raycasting
+            const actualPlanet = this.planets[this.planets.length - 1];
+            marker.parentPlanet = actualPlanet;
+            actualPlanet.userData.marker = marker;
+
+            actualPlanet.add(marker);
         });
     }
 
-    update(time) {
+    update(time, isMapOpen) {
         this.planets.forEach(p => {
             p.rotation.y += p.userData.selfRotationSpeed;
             if (p.userData.orbitRadius > 0) {
                 const a = time * p.userData.orbitSpeed;
                 p.position.set(Math.cos(a) * p.userData.orbitRadius, 0, Math.sin(a) * p.userData.orbitRadius);
+            }
+            if (p.userData.marker) {
+                p.userData.marker.visible = isMapOpen;
             }
         });
     }
