@@ -23,23 +23,26 @@ class Ship {
             side: THREE.DoubleSide
         });
 
-        // --- HULL GROUP ---
-        const hull = new THREE.Group();
+        // --- EXTERIOR HULL GROUP ---
+        this.bodyGroup = new THREE.Group(); // Fuselage that might block 1st person
+        this.mesh.add(this.bodyGroup);
+
+        const hull = new THREE.Group(); // General exterior (wings, etc.)
         this.mesh.add(hull);
 
-        // Core Body (Nose at -Z)
+        // Main Body (Hiding this in 1st person)
         const coreGeo = new THREE.CylinderGeometry(0.5, 0.6, 3, 32);
         const core = new THREE.Mesh(coreGeo, hullMat);
         core.rotation.x = -Math.PI / 2;
-        hull.add(core);
+        this.bodyGroup.add(core);
 
         const noseGeo = new THREE.CylinderGeometry(0.1, 0.5, 1.2, 32);
         const nose = new THREE.Mesh(noseGeo, hullMat);
         nose.rotation.x = -Math.PI / 2;
         nose.position.z = -2.1;
-        hull.add(nose);
+        this.bodyGroup.add(nose);
 
-        // --- WINGS (SYMMETRY FIX) ---
+        // --- WINGS (SYMMETRIC) ---
         const wingShape = new THREE.Shape();
         wingShape.moveTo(0, 0);
         wingShape.lineTo(4, 2);
@@ -55,7 +58,7 @@ class Ship {
         rWing.position.set(0.4, 0, 1);
         hull.add(rWing);
 
-        // Left Wing (Mirrored)
+        // Left Wing
         const lWingGroup = new THREE.Group();
         const lWing = new THREE.Mesh(wingGeo, hullMat);
         lWing.rotation.x = Math.PI / 2;
@@ -82,26 +85,28 @@ class Ship {
         engineMount.position.z = 1.9;
         hull.add(engineMount);
 
-        // --- COCKPIT INTERIOR (REFINED) ---
+        // --- COCKPIT INTERIOR (BRIGHTER & SOLID) ---
         this.interior = new THREE.Group();
         this.mesh.add(this.interior);
         this.interior.visible = false;
 
-        // Floor & Walls
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.1, 2.5), darkHullMat);
+        // Internal Floor
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 2.5), darkHullMat);
         floor.position.set(0, -0.6, -1.3);
         this.interior.add(floor);
 
-        const wallL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1, 2), darkHullMat);
-        wallL.position.set(-0.7, 0, -1.3);
+        // Side Walls
+        const wallGeo = new THREE.BoxGeometry(0.1, 1.2, 2.2);
+        const wallL = new THREE.Mesh(wallGeo, darkHullMat);
+        wallL.position.set(-0.8, 0, -1.3);
         this.interior.add(wallL);
 
-        const wallR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1, 2), darkHullMat);
-        wallR.position.set(0.7, 0, -1.3);
+        const wallR = new THREE.Mesh(wallGeo, darkHullMat);
+        wallR.position.set(0.8, 0, -1.3);
         this.interior.add(wallR);
 
         // Dashboard
-        const dash = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 0.6), darkHullMat);
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.6), darkHullMat);
         dash.position.set(0, -0.3, -2.1);
         this.interior.add(dash);
 
@@ -110,22 +115,28 @@ class Ship {
         seat.position.set(0, -0.35, -1.3);
         this.interior.add(seat);
 
-        // HUD Display (Moved slightly further to avoid any future clipping)
+        // Stronger Internal Lighting
+        this.cockpitLight = new THREE.PointLight(0x00FFFF, 5, 10); // More intensity
+        this.cockpitLight.position.set(0, 0.8, -1.2);
+        this.interior.add(this.cockpitLight);
+
+        // Instrument Texture
         this.instrumentCanvas = document.createElement('canvas');
         this.instrumentCanvas.width = 512; this.instrumentCanvas.height = 256;
         this.instrumentCtx = this.instrumentCanvas.getContext('2d');
         this.instrumentTexture = new THREE.CanvasTexture(this.instrumentCanvas);
-        const screenMat = new THREE.MeshBasicMaterial({ map: this.instrumentTexture, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+        const screenMat = new THREE.MeshBasicMaterial({
+            map: this.instrumentTexture,
+            transparent: true,
+            opacity: 0.95,
+            blending: THREE.AdditiveBlending
+        });
 
-        const hud = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.6), screenMat);
-        hud.position.set(0, 0.3, -2.5);
-        hud.rotation.x = -0.15;
+        const hud = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), screenMat);
+        hud.position.set(0, 0.3, -2.3); // Adjusted Z
+        hud.rotation.x = -0.1;
         this.interior.add(hud);
 
-        // Dedicated Cockpit Light
-        this.cockpitLight = new THREE.PointLight(0x00FFFF, 2, 5);
-        this.cockpitLight.position.set(0, 1, -1.5);
-        this.interior.add(this.cockpitLight);
 
         // Cockpit Frame / Canopy
         const canopyGeo = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);

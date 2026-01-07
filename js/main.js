@@ -49,7 +49,9 @@ class Game {
             }
             if (e.code === 'KeyV') {
                 this.camState.mode = (this.camState.mode === 'third') ? 'first' : 'third';
-                this.ship.interior.visible = (this.camState.mode === 'first');
+                const isFirstPerson = (this.camState.mode === 'first');
+                this.ship.interior.visible = isFirstPerson;
+                this.ship.bodyGroup.visible = !isFirstPerson; // Hide fuselage in 1st person
             }
         });
     }
