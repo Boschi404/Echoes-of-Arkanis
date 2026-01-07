@@ -147,24 +147,33 @@ class Game {
                 const atmoRadius = p.userData.radius * 1.5;
                 if (d < atmoRadius) {
                     const atmoDepth = (atmoRadius - d) / (atmoRadius - p.userData.radius);
-                    const dragFactor = 1 - (atmoDepth * 0.05); // Reduce velocity by up to 5% per frame
+                    // Subtle drag: only 0.2% max reduction per frame
+                    const dragFactor = 1 - (atmoDepth * 0.002);
                     this.ship.velocity.multiplyScalar(dragFactor);
 
-                    // Re-entry Heat
-                    if (currentSpeed > 50) {
-                        const heatIntensity = Math.min(1, (currentSpeed - 50) / 300 * atmoDepth);
+                    // Re-entry Heat (more balanced)
+                    if (currentSpeed > 40) {
+                        const heatIntensity = Math.min(1, (currentSpeed - 40) / 250 * atmoDepth);
                         this.ship.updateHeatEffect(heatIntensity);
                     } else {
                         this.ship.updateHeatEffect(0);
                     }
 
+                    // Sky Color Shift (Atmospheric Immersion)
+                    const targetSkyColor = new THREE.Color(p.userData.atmosphereColor || 0x000000);
+                    this.sceneManager.scene.background.lerp(targetSkyColor, atmoDepth * 0.05);
+
                     this.atmoStatus = p.name;
                 }
             }
         });
-        if (!this.solarSystem.planets.some(p => this.ship.mesh.position.distanceTo(p.position) < p.userData.radius * 1.5)) {
+
+        // Return to black space if no atmosphere
+        const anyAtmo = this.solarSystem.planets.some(p => p.userData.hasAtmosphere && this.ship.mesh.position.distanceTo(p.position) < p.userData.radius * 1.5);
+        if (!anyAtmo) {
             this.ship.updateHeatEffect(0);
             this.atmoStatus = null;
+            this.sceneManager.scene.background.lerp(new THREE.Color(0x000000), 0.05);
         }
 
         // 5. HUD & CAMERA
