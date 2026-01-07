@@ -359,6 +359,9 @@ class Game {
     }
 
     handleMapMode() {
+        // ALWAYS Center on Ship
+        this.mapState.targetPivot.copy(this.ship.mesh.position);
+
         // 1. INPUT FOR MAP NAVIGATION
         const scrollSens = 0.15;
         const dragSens = 0.005;
