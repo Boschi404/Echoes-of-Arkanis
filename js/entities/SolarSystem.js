@@ -266,11 +266,11 @@ class GalaxyManager {
     createMapMarker(radius) {
         const markerMat = new THREE.SpriteMaterial({ map: this.markerTexture, color: 0xffffff, transparent: true, depthTest: false });
         const marker = new THREE.Sprite(markerMat);
-        // Constant screen size illusion or just big enough
-        const scale = radius * 50;
+        // Significantly reduced scale for "halo" effect rather than giant blob
+        const scale = radius * 2.5;
         marker.scale.set(scale, scale, 1);
         marker.visible = false;
-        marker.parentPlanet = null; // Will be set by logic if needed, or parent is just the mesh
+        marker.parentPlanet = null;
         return marker;
     }
 
@@ -285,7 +285,7 @@ class GalaxyManager {
         const material = new THREE.LineBasicMaterial({
             color: color,
             transparent: true,
-            opacity: 0.15, // Subtle
+            opacity: 0.08, // Very subtle lines
             linewidth: 1
         });
         const line = new THREE.Line(geometry, material);
