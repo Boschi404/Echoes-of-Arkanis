@@ -2,7 +2,7 @@ class SceneManager {
     constructor() {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x000000);
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000000);
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 10000000);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);

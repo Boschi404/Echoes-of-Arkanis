@@ -383,8 +383,8 @@ class Game {
             this.sceneManager.camera.position.copy(this.ship.mesh.position.clone().add(camOffset));
             this.sceneManager.camera.quaternion.slerp(this.ship.mesh.quaternion, 0.25);
         } else {
-            // First Person: Positioned in the pilot seat
-            const camOffset = new THREE.Vector3(0, 0, -1.3).applyQuaternion(this.ship.mesh.quaternion);
+            // First Person: Positioned in the pilot seat, eyes slightly up
+            const camOffset = new THREE.Vector3(0, 0.2, -1.3).applyQuaternion(this.ship.mesh.quaternion);
             this.sceneManager.camera.position.copy(this.ship.mesh.position.clone().add(camOffset));
             this.sceneManager.camera.quaternion.copy(this.ship.mesh.quaternion);
         }
