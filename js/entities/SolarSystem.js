@@ -159,6 +159,12 @@ class GalaxyManager {
             systemGroup.add(planet);
             this.planets.push(planet); // Add to global list for logic
 
+            // ADD ORBIT LINE FOR PLANET
+            if (pData.dist > 0) {
+                const orbit = this.createOrbitLine(pData.dist, 0x44aaff);
+                systemGroup.add(orbit);
+            }
+
             // Start Position for Satellites relative to this planet
             if (pData.moons) {
                 pData.moons.forEach(mData => {
@@ -180,6 +186,12 @@ class GalaxyManager {
                         Math.sin(moon.userData.angle) * mData.dist
                     );
                     planet.add(moon);
+
+                    // ADD ORBIT LINE FOR MOON
+                    if (mData.dist > 0) {
+                        const moonOrbit = this.createOrbitLine(mData.dist, 0xaaaaaa);
+                        planet.add(moonOrbit);
+                    }
 
                     // Add moon to collision list
                     this.planets.push(moon);
@@ -249,6 +261,25 @@ class GalaxyManager {
         marker.visible = false;
         marker.parentPlanet = null; // Will be set by logic if needed, or parent is just the mesh
         return marker;
+    }
+
+    createOrbitLine(radius, color) {
+        const segments = 256;
+        const pts = [];
+        for (let i = 0; i <= segments; i++) {
+            const theta = (i / segments) * Math.PI * 2;
+            pts.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(pts);
+        const material = new THREE.LineBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.15, // Subtle
+            linewidth: 1
+        });
+        const line = new THREE.Line(geometry, material);
+        // Default lies on XZ plane, exactly what we want
+        return line;
     }
 
     update(time, isMapOpen) {
