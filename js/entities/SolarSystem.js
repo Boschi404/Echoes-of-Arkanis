@@ -101,17 +101,26 @@ class GalaxyManager {
         this.scene.add(this.container);
 
         // 1. Process Canon Systems
+        let sysIndex = 0;
         GALAXY_CONFIG.galaxy.forEach(region => {
-            region.systems.forEach((sysData, idx) => {
-                // Space them out significantly to simulate separate systems
-                // In a real seamless game, they would be lightyears apart.
-                // Here we put them far enough that you can't see one from another easily without travel.
-                const systemPos = new THREE.Vector3(
-                    this.rng.range(-500000, 500000),
-                    this.rng.range(-100000, 100000),
-                    this.rng.range(-500000, 500000)
-                );
+            region.systems.forEach((sysData) => {
+                // FORCE Deterministic Grid Placement
+                // System 0 (Coruscant) is at 0,0,0
+                // Others are spaced out by 500,000 units
+                let x = 0, z = 0;
+
+                if (sysIndex > 0) {
+                    // Spiral layout or simple grid
+                    const shell = Math.ceil(Math.sqrt(sysIndex + 1));
+                    const angle = sysIndex * 1.5; // Radians
+                    const dist = 400000 * shell;
+                    x = Math.cos(angle) * dist;
+                    z = Math.sin(angle) * dist;
+                }
+
+                const systemPos = new THREE.Vector3(x, 0, z); // Keep them on the plane for easier navigation
                 this.createSystem(sysData, systemPos, region.region);
+                sysIndex++;
             });
         });
     }
