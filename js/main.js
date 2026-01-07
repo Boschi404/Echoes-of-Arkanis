@@ -71,11 +71,12 @@ class Game {
             this.handleAutopilot(t, fwd);
         } else {
             // Manual Steering
-            const sens = 0.025;
+            // Manual Steering: More lumbering/heavy feel
+            const sens = 0.015; // Reduced sensitivity
             const targetRX = this.input.mouse.y * sens;
             const targetRY = -this.input.mouse.x * sens;
-            this.ship.rotationVelocity.x += (targetRX - this.ship.rotationVelocity.x) * 0.1;
-            this.ship.rotationVelocity.y += (targetRY - this.ship.rotationVelocity.y) * 0.1;
+            this.ship.rotationVelocity.x += (targetRX - this.ship.rotationVelocity.x) * 0.03; // Much slower lerp
+            this.ship.rotationVelocity.y += (targetRY - this.ship.rotationVelocity.y) * 0.03;
             this.ship.mesh.rotateX(this.ship.rotationVelocity.x);
             this.ship.mesh.rotateY(this.ship.rotationVelocity.y);
 
@@ -255,10 +256,10 @@ class Game {
         // setFromUnitVectors handles the shortest path between vectors stably
         const qTarget = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), toT);
 
-        // Lateral Damping (Kill drift)
+        // Lateral Damping (Kill drift) - REDUCED for more "clumsy" 0-G feel
         if (currentSpeed > 2) {
             const lateralVel = currentVel.clone().addScaledVector(toT, -currentVel.dot(toT));
-            this.ship.velocity.addScaledVector(lateralVel, -0.04);
+            this.ship.velocity.addScaledVector(lateralVel, -0.005); // Way more drift
         }
 
         // BANK INTO TURN
@@ -269,8 +270,8 @@ class Game {
         const rollQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), targetRoll);
         qTarget.multiply(rollQuat);
 
-        // Ship orientation lerp
-        this.ship.mesh.quaternion.slerp(qTarget, 0.06);
+        // Ship orientation lerp - Slower for a heavier feel
+        this.ship.mesh.quaternion.slerp(qTarget, 0.025);
 
         // 3. AP THROTTLE & PARKING LOGIC (REWORKED)
         if (this.input.isAutopilot) {
@@ -291,10 +292,10 @@ class Game {
             const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
             const relativeSpeed = this.ship.velocity.dot(toRealT);
 
-            // CONSTANTS
+            // CONSTANTS - WEAKENED BRAKES
             const maxCruiseSpeed = 400;
-            const brakeAcc = 0.22; // Reduced by another 30% for ultra-smooth braking
-            const safetyBuffer = 800; // Increased buffer to start braking even earlier
+            const brakeAcc = 0.12; // Far less effective brakes
+            const safetyBuffer = 1500; // Needs way more space to stop now
 
             // Calculate braking distance needed to reach speed 0 at targetParkDist
             const brakingDistanceNeeded = (relativeSpeed * relativeSpeed) / (2 * brakeAcc);
