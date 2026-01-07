@@ -10,129 +10,237 @@ class Ship {
     }
 
     createShip() {
-        const mat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.2, metalness: 0.9 });
-        const accentMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 2 });
-        const darkMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 });
+        // --- MATERIALS ---
+        const hullMat = new THREE.MeshStandardMaterial({
+            color: 0x888888,
+            roughness: 0.2,
+            metalness: 0.9,
+            flatShading: false
+        });
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1, roughness: 0.1 });
+        const darkPlateMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.8, roughness: 0.4 });
+        const emissiveBlue = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 3 });
+        const glassMat = new THREE.MeshStandardMaterial({
+            color: 0x88ccff,
+            transparent: true,
+            opacity: 0.2,
+            metalness: 1,
+            roughness: 0,
+            side: THREE.DoubleSide
+        });
 
-        // MAIN BODY - Nose points towards -Z
-        const bodyGeo = new THREE.CylinderGeometry(0.1, 0.4, 5, 12);
-        const body = new THREE.Mesh(bodyGeo, mat);
-        body.rotation.x = -Math.PI / 2; // PUNTA VERSO -Z
-        this.mesh.add(body);
+        // --- EXTERIOR HULL ---
+        const hullGroup = new THREE.Group();
+        this.mesh.add(hullGroup);
 
-        // COCKPIT
-        const cockpitGeo = new THREE.SphereGeometry(0.35, 16, 16);
-        const cockpitMat = new THREE.MeshStandardMaterial({ color: 0x001122, transparent: true, opacity: 0.6, metalness: 1, roughness: 0 });
-        const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
-        cockpit.position.set(0, 0.25, -1.2);
-        cockpit.scale.set(1, 0.6, 2.2);
-        this.mesh.add(cockpit);
+        // Main Fuselage (Multi-segmented for detail)
+        const noseGeo = new THREE.CylinderGeometry(0.1, 0.4, 1.5, 32);
+        const nose = new THREE.Mesh(noseGeo, hullMat);
+        nose.rotation.x = -Math.PI / 2;
+        nose.position.z = -2;
+        hullGroup.add(nose);
 
-        // WINGS
+        const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 3, 32);
+        const body = new THREE.Mesh(bodyGeo, hullMat);
+        body.rotation.x = -Math.PI / 2;
+        hullGroup.add(body);
+
+        // Greebles (Detail plates on hull)
+        for (let i = 0; i < 6; i++) {
+            const plateGeo = new THREE.BoxGeometry(0.2, 0.05, 0.8);
+            const plate = new THREE.Mesh(plateGeo, darkPlateMat);
+            const angle = (i / 6) * Math.PI * 2;
+            plate.position.set(Math.cos(angle) * 0.45, Math.sin(angle) * 0.45, -0.5);
+            plate.rotation.z = angle;
+            hullGroup.add(plate);
+        }
+
+        // --- WINGS ---
         const wingShape = new THREE.Shape();
         wingShape.moveTo(0, 0);
-        wingShape.lineTo(3.5, 2.5);
-        wingShape.lineTo(0, 1.5);
+        wingShape.lineTo(4, -1); // Swept back
+        wingShape.lineTo(3.8, 1.5);
+        wingShape.lineTo(0, 1);
         wingShape.lineTo(0, 0);
-        const wingExtrude = new THREE.ExtrudeGeometry(wingShape, { depth: 0.05, bevelEnabled: false });
 
-        const rightWing = new THREE.Mesh(wingExtrude, mat);
+        const wingExtrude = new THREE.ExtrudeGeometry(wingShape, { depth: 0.08, bevelEnabled: true, bevelThickness: 0.02 });
+
+        const leftWing = new THREE.Mesh(wingExtrude, hullMat);
+        leftWing.rotation.x = -Math.PI / 2;
+        leftWing.position.set(-0.35, 0, 0.5);
+        hullGroup.add(leftWing);
+
+        const rightWing = new THREE.Mesh(wingExtrude, hullMat);
         rightWing.rotation.x = Math.PI / 2;
-        rightWing.position.set(0.2, 0, -0.8);
-        this.mesh.add(rightWing);
+        rightWing.position.set(0.35, 0, 0.5);
+        hullGroup.add(rightWing);
 
-        const leftWing = new THREE.Mesh(wingExtrude, mat);
-        leftWing.rotation.x = Math.PI / 2;
-        leftWing.rotation.y = Math.PI;
-        leftWing.position.set(-0.2, 0, -0.8);
-        this.mesh.add(leftWing);
+        // Stabilizers / Vertical Fins
+        const finGeo = new THREE.BoxGeometry(0.05, 1.2, 1.5);
+        const finL = new THREE.Mesh(finGeo, hullMat);
+        finL.position.set(-1.2, 0.4, 1);
+        finL.rotation.z = -0.3;
+        hullGroup.add(finL);
 
-        // REAR ENGINE
-        const engineGeo = new THREE.CylinderGeometry(0.3, 0.4, 1, 16);
-        const engine = new THREE.Mesh(engineGeo, darkMat);
-        engine.rotation.x = Math.PI / 2;
-        engine.position.set(0, 0, 2);
-        this.mesh.add(engine);
+        const finR = new THREE.Mesh(finGeo, hullMat);
+        finR.position.set(1.2, 0.4, 1);
+        finR.rotation.z = 0.3;
+        hullGroup.add(finR);
 
-        // THRUSTER FLAME - Realistic Multi-layered
-        this.thrusterGroup = new THREE.Group();
-        this.thrusterGroup.position.set(0, 0, 2.5);
-        this.mesh.add(this.thrusterGroup);
+        // --- ENGINES ---
+        const engineMountGeo = new THREE.CylinderGeometry(0.55, 0.6, 1, 32);
+        const engineMount = new THREE.Mesh(engineMountGeo, darkPlateMat);
+        engineMount.rotation.x = Math.PI / 2;
+        engineMount.position.z = 1.8;
+        hullGroup.add(engineMount);
 
-        // Inner Core (White-Blue)
-        const coreGeo = new THREE.ConeGeometry(0.25, 3, 12);
-        this.flameCore = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 }));
-        this.flameCore.rotation.x = -Math.PI / 2;
-        this.flameCore.position.z = 1.5;
-        this.thrusterGroup.add(this.flameCore);
+        // Triple Thruster Nozzles
+        const nozzleGeo = new THREE.CylinderGeometry(0.25, 0.3, 0.5, 16);
+        const nozzles = [
+            { x: 0, y: 0.2, z: 2.3 },
+            { x: -0.25, y: -0.2, z: 2.3 },
+            { x: 0.25, y: -0.2, z: 2.3 }
+        ];
+        nozzles.forEach(n => {
+            const nozzle = new THREE.Mesh(nozzleGeo, chromeMat);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.set(n.x, n.y, n.z);
+            hullGroup.add(nozzle);
 
-        // Outer Glow (Blue-Cyan)
-        const glowGeo = new THREE.ConeGeometry(0.4, 4.5, 12);
-        this.flameGlow = new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.4 }));
-        this.flameGlow.rotation.x = -Math.PI / 2;
-        this.flameGlow.position.z = 2.25;
-        this.thrusterGroup.add(this.flameGlow);
+            const ringGeo = new THREE.TorusGeometry(0.25, 0.02, 8, 24);
+            const ring = new THREE.Mesh(ringGeo, emissiveBlue);
+            ring.position.set(n.x, n.y, n.z + 0.25);
+            hullGroup.add(ring);
+        });
 
-        this.thrusterGroup.visible = false;
-
-        // COCKPIT INTERIOR (Visible in First Person)
+        // --- COCKPIT INTERIOR (PRO LEVEL) ---
         this.interior = new THREE.Group();
         this.mesh.add(this.interior);
         this.interior.visible = false;
 
-        const cockpitFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
-        const dashMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1, roughness: 0.1 });
-        const screenMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.1 });
+        // Seat
+        const seatBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.6), darkPlateMat);
+        seatBase.position.set(0, -0.4, -1.2);
+        this.interior.add(seatBase);
 
-        // Dashboard
-        const dashGeo = new THREE.BoxGeometry(2, 0.5, 1);
-        const dash = new THREE.Mesh(dashGeo, dashMat);
-        dash.position.set(0, 0, -1.8);
-        this.interior.add(dash);
+        const seatBack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.1), darkPlateMat);
+        seatBack.position.set(0, 0, -0.95);
+        seatBack.rotation.x = -0.15;
+        this.interior.add(seatBack);
 
-        // Screens
-        const screenGeo = new THREE.PlaneGeometry(0.6, 0.4);
-        const screenL = new THREE.Mesh(screenGeo, screenMat);
-        screenL.position.set(-0.5, 0.2, -1.75);
-        screenL.rotation.y = 0.3;
-        this.interior.add(screenL);
+        // Joysticks
+        const stickGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.3);
+        const stickL = new THREE.Mesh(stickGeo, chromeMat);
+        stickL.position.set(-0.35, -0.2, -1.4);
+        stickL.rotation.x = 0.2;
+        this.interior.add(stickL);
 
-        const screenR = new THREE.Mesh(screenGeo, screenMat);
-        screenR.position.set(0.5, 0.2, -1.75);
-        screenR.rotation.y = -0.3;
-        this.interior.add(screenR);
+        const stickR = new THREE.Mesh(stickGeo, chromeMat);
+        stickR.position.set(0.35, -0.2, -1.4);
+        stickR.rotation.x = 0.2;
+        this.interior.add(stickR);
 
-        // Glowing buttons
-        const btnGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
-        const btnMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        for (let i = 0; i < 5; i++) {
-            const btn = new THREE.Mesh(btnGeo, btnMat.clone());
-            btn.position.set(-0.7 + i * 0.1, 0.05, -1.7);
-            if (i % 2 == 0) btn.material.color.setHex(0xff0000);
-            this.interior.add(btn);
-        }
+        // Instrument Layout
+        this.instrumentCanvas = document.createElement('canvas');
+        this.instrumentCanvas.width = 512; this.instrumentCanvas.height = 256;
+        this.instrumentCtx = this.instrumentCanvas.getContext('2d');
+        this.instrumentTexture = new THREE.CanvasTexture(this.instrumentCanvas);
 
-        // Framework/Bars
-        const barGeo = new THREE.CylinderGeometry(0.02, 0.02, 2.5);
-        const barL = new THREE.Mesh(barGeo, cockpitFrameMat);
-        barL.rotation.z = Math.PI / 4;
-        barL.position.set(-0.8, 0.8, -1.5);
-        this.interior.add(barL);
+        const screenMat = new THREE.MeshBasicMaterial({ map: this.instrumentTexture, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
 
-        const barR = new THREE.Mesh(barGeo, cockpitFrameMat);
-        barR.rotation.z = -Math.PI / 4;
-        barR.position.set(0.8, 0.8, -1.5);
-        this.interior.add(barR);
+        // HUD Panels
+        const mainScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.6), screenMat);
+        mainScreen.position.set(0, 0.35, -1.9);
+        mainScreen.rotation.x = -0.15;
+        this.interior.add(mainScreen);
+
+        const sideScreenL = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.4), screenMat);
+        sideScreenL.position.set(-0.9, 0.2, -1.7);
+        sideScreenL.rotation.y = 0.6;
+        this.interior.add(sideScreenL);
+
+        const sideScreenR = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.4), screenMat);
+        sideScreenR.position.set(0.9, 0.2, -1.7);
+        sideScreenR.rotation.y = -0.6;
+        this.interior.add(sideScreenR);
+
+        // --- EXTERIOR COCKPIT GLASS ---
+        const canopyGeo = new THREE.SphereGeometry(0.6, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
+        const canopy = new THREE.Mesh(canopyGeo, glassMat);
+        canopy.position.set(0, 0.2, -1.2);
+        canopy.rotation.x = -Math.PI / 2;
+        canopy.scale.set(1.5, 2.5, 1);
+        hullGroup.add(canopy);
+
+        // THRUSTER FLAME
+        this.thrusterGroup = new THREE.Group();
+        this.thrusterGroup.position.set(0, 0, 2.6);
+        this.mesh.add(this.thrusterGroup);
+
+        const coreGeo = new THREE.ConeGeometry(0.4, 4, 16);
+        this.flameCore = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 }));
+        this.flameCore.rotation.x = -Math.PI / 2;
+        this.flameCore.position.z = 2;
+        this.thrusterGroup.add(this.flameCore);
+
+        const glowGeo = new THREE.ConeGeometry(0.7, 6, 16);
+        this.flameGlow = new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.4 }));
+        this.flameGlow.rotation.x = -Math.PI / 2;
+        this.flameGlow.position.z = 3;
+        this.thrusterGroup.add(this.flameGlow);
+
+        this.thrusterGroup.visible = false;
 
         // RE-ENTRY HEAT EFFECT
         this.heatShield = new THREE.Group();
         this.mesh.add(this.heatShield);
-
-        const heatGeo = new THREE.SphereGeometry(1.5, 16, 16);
-        const heatMat = new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
-        this.heatMesh = new THREE.Mesh(heatGeo, heatMat);
-        this.heatMesh.scale.set(1.5, 1, 3);
+        this.heatMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(2, 32, 32),
+            new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0, blending: THREE.AdditiveBlending })
+        );
+        this.heatMesh.scale.set(1.4, 1, 2.5);
         this.heatShield.add(this.heatMesh);
+    }
+
+    updateCockpit(speed, target) {
+        if (!this.interior.visible) return;
+
+        const ctx = this.instrumentCtx;
+        ctx.clearRect(0, 0, 512, 256);
+
+        // Background glow
+        ctx.fillStyle = 'rgba(0, 20, 40, 0.3)';
+        ctx.fillRect(0, 0, 512, 256);
+
+        // Speed readout
+        ctx.font = 'bold 60px Orbitron, Rajdhani, sans-serif';
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillText(`SPD: ${(speed * 10).toFixed(1)}`, 40, 80);
+
+        // Target Info
+        ctx.font = '35px Orbitron, Rajdhani, sans-serif';
+        ctx.fillStyle = target ? '#ff4d00' : '#445566';
+        const targetName = target ? target.name.toUpperCase() : 'NO TARGET';
+        ctx.fillText(`TGT: ${targetName}`, 40, 140);
+
+        if (target) {
+            const dist = this.mesh.position.distanceTo(target.position).toFixed(0);
+            ctx.fillText(`DST: ${dist}m`, 40, 190);
+
+            // Artificial Horizon (Simple line)
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(350, 150);
+            ctx.lineTo(450, 150);
+            ctx.stroke();
+        }
+
+        // Warning scanlines 
+        ctx.fillStyle = 'rgba(0, 243, 255, 0.05)';
+        for (let i = 0; i < 256; i += 4) ctx.fillRect(0, i, 512, 1);
+
+        this.instrumentTexture.needsUpdate = true;
     }
 
     updateHeatEffect(intensity) {

@@ -190,6 +190,7 @@ class Game {
         }
 
         this.ui.updateHUD(currentSpeed, this.ship.mesh.position.length(), this.atmoStatus);
+        this.ship.updateCockpit(currentSpeed, this.lockedTarget);
         this.environment.updateSpeedLines(this.ship.mesh, currentSpeed);
     }
 
