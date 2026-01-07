@@ -65,7 +65,8 @@ class GalaxyManager {
     constructor(scene) {
         this.scene = scene;
         this.rng = new MathUtils(GALAXY_CONFIG.seed);
-        this.planets = []; // All collision bodies (Planets + Moons)
+        this.rng = new MathUtils(GALAXY_CONFIG.seed);
+        this.celestialBodies = []; // All interactable bodies: Stars, Planets, Moons
         this.systems = [];
         this.markerTexture = this.createMarkerTexture();
         this.biomes = {
@@ -139,7 +140,17 @@ class GalaxyManager {
         const light = new THREE.PointLight(data.star.color, 2, 500000);
         star.add(light);
 
+        star.userData = {
+            radius: data.star.radius,
+            type: 'star',
+            soi: data.star.radius * 20, // Massive gravity well
+            gravity: data.star.radius * 2, // Strong pull
+            marker: this.createMapMarker(data.star.radius * 2)
+        };
+        star.add(star.userData.marker);
+
         systemGroup.add(star);
+        this.celestialBodies.push(star);
 
         // --- PLANETS ---
         data.planets.forEach(pData => {
@@ -157,7 +168,7 @@ class GalaxyManager {
             );
 
             systemGroup.add(planet);
-            this.planets.push(planet); // Add to global list for logic
+            this.celestialBodies.push(planet); // Add to global list for logic
 
             // ADD ORBIT LINE FOR PLANET
             if (pData.dist > 0) {
@@ -194,7 +205,7 @@ class GalaxyManager {
                     }
 
                     // Add moon to collision list
-                    this.planets.push(moon);
+                    this.celestialBodies.push(moon);
                 });
             }
         });
@@ -297,15 +308,14 @@ class GalaxyManager {
         // Moons (children of Planets) will move with planets automatically, 
         // but we need to rotate them around the planet.
 
-        this.planets.forEach(p => {
+        // We updates all celestial bodies
+        this.celestialBodies.forEach(p => {
             // Rotate on axis
             p.rotation.y += 0.0005;
 
             // Map Marker Visibility
             if (p.userData.marker) {
                 p.userData.marker.visible = isMapOpen;
-                // If map is open, ensure marker size is visible? 
-                // The Sprite handles billboard.
             }
 
             // Orbital Logic

@@ -84,7 +84,7 @@ class Game {
             if (!this.input.isMapOpen) {
                 let bestP = null;
                 let minA = 0.2;
-                this.galaxy.planets.forEach((p, index) => {
+                this.galaxy.celestialBodies.forEach((p, index) => {
                     const pWorld = new THREE.Vector3().setFromMatrixPosition(p.matrixWorld);
                     const toP = new THREE.Vector3().subVectors(pWorld, this.ship.mesh.position).normalize();
                     const angle = fwd.angleTo(toP);
@@ -133,7 +133,7 @@ class Game {
         let inAtmo = false;
         const shipWorldPos = new THREE.Vector3().setFromMatrixPosition(this.ship.mesh.matrixWorld);
 
-        this.galaxy.planets.forEach(p => {
+        this.galaxy.celestialBodies.forEach(p => {
             const planetWorldPos = new THREE.Vector3().setFromMatrixPosition(p.matrixWorld);
             const d = shipWorldPos.distanceTo(planetWorldPos);
             const pData = p.userData;
@@ -393,10 +393,10 @@ class Game {
         ray.setFromCamera(new THREE.Vector2(this.input.mouse.x, this.input.mouse.y), this.sceneManager.camera);
 
         // Intersect markers first
-        const markers = this.galaxy.planets.map(p => p.userData.marker).filter(m => m);
+        const markers = this.galaxy.celestialBodies.map(p => p.userData.marker).filter(m => m);
         const markerHits = ray.intersectObjects(markers);
 
-        const planetsToTarget = this.galaxy.planets;
+        const planetsToTarget = this.galaxy.celestialBodies;
         const planetHits = ray.intersectObjects(planetsToTarget);
 
         if (markerHits.length > 0 || planetHits.length > 0) {
