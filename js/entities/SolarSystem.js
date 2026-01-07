@@ -1,161 +1,145 @@
-const PLANET_DATA = [
-    { name: "Sole", radius: 15000, color: 0xffcc00, selfRotationSpeed: 0.0001, orbitRadius: 0, orbitSpeed: 0, light: true, emissive: 0xffaa00, info: "Il cuore del sistema. Massa infinita." },
-    { name: "Vulcan", radius: 1500, color: 0xaa5533, selfRotationSpeed: 0.002, orbitRadius: 60000, orbitSpeed: 0.00003, hasAtmosphere: true, atmosphereColor: 0xff4400, info: "Pianeta roccioso estremo. Ricco di minerali rari." },
-    { name: "Tatooine", radius: 3500, color: 0xedc9af, selfRotationSpeed: 0.001, orbitRadius: 120000, orbitSpeed: 0.000015, hasAtmosphere: true, atmosphereColor: 0xffccaa, info: "Pianeta desertico con due soli all'orizzonte." },
-    { name: "Hoth", radius: 2500, color: 0xe0f2f7, selfRotationSpeed: 0.0005, orbitRadius: 250000, orbitSpeed: 0.000008, hasAtmosphere: true, atmosphereColor: 0x88ccff, info: "Deserto di ghiaccio. Temperatura media -60°C." },
-    { name: "Endor", radius: 2200, color: 0x228b22, selfRotationSpeed: 0.003, orbitRadius: 400000, orbitSpeed: 0.000005, hasAtmosphere: true, atmosphereColor: 0x55ff55, info: "Luna boscosa. Biodiversità elevata." }
-];
+const GALAXY_CONFIG = {
+    "project_name": "Echoes of Arkanis",
+    "seed": 69,
+    "galaxy": [
+        {
+            "region": "Core Worlds",
+            "systems": [
+                { "name": "Coruscant System", "planets": [{ "name": "Coruscant", "radius": 120, "type": "city", "dist": 15000 }] },
+                { "name": "Corellia System", "planets": [{ "name": "Corellia", "radius": 100, "type": "industrial", "dist": 25000 }] }
+            ]
+        },
+        {
+            "region": "Outer Rim",
+            "systems": [
+                { "name": "Tatoo System", "stars": ["Tatoo I", "Tatoo II"], "planets": [{ "name": "Tatooine", "radius": 80, "type": "desert", "dist": 35000 }] },
+                { "name": "Hoth System", "planets": [{ "name": "Hoth", "radius": 70, "type": "ice", "dist": 50000 }] },
+                { "name": "Bespin System", "planets": [{ "name": "Bespin", "radius": 500, "type": "gas_giant", "dist": 70000 }] }
+            ]
+        }
+    ]
+};
 
-class SolarSystem {
+class GalaxyManager {
     constructor(scene) {
         this.scene = scene;
+        this.rng = new MathUtils(GALAXY_CONFIG.seed);
         this.planets = [];
-        this.sun = null;
-        this.markerTexture = this.createMarkerTexture();
-        this.createSolarSystem();
+        this.systems = [];
+        this.biomes = {
+            city: { color: 0x444455, roughness: 0.8, metalness: 0.5, emissive: 0x111122 },
+            industrial: { color: 0x554433, roughness: 0.9, metalness: 0.7, emissive: 0x221100 },
+            desert: { color: 0xedc9af, roughness: 1.0, metalness: 0.0, emissive: 0x000000 },
+            ice: { color: 0xddffff, roughness: 0.1, metalness: 0.2, emissive: 0x001122 },
+            gas_giant: { color: 0xffaa44, roughness: 0.5, metalness: 0.0, emissive: 0x221100, transparent: true, opacity: 0.8 },
+            volcanic: { color: 0x221111, roughness: 0.9, metalness: 0.1, emissive: 0xff2200 }
+        };
+
+        this.init();
     }
 
-    createMarkerTexture() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        grad.addColorStop(0, 'rgba(0, 243, 255, 1)');
-        grad.addColorStop(0.3, 'rgba(0, 243, 255, 0.5)');
-        grad.addColorStop(1, 'rgba(0, 243, 255, 0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 64, 64);
-        return new THREE.CanvasTexture(canvas);
-    }
+    init() {
+        this.container = new THREE.Group();
+        this.scene.add(this.container);
 
-    createPlanetTexture(color) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 512; canvas.height = 512;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#' + new THREE.Color(color).getHexString();
-        ctx.fillRect(0, 0, 512, 512);
-        for (let i = 0; i < 800; i++) {
-            ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
-            ctx.beginPath();
-            ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 15, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        return new THREE.CanvasTexture(canvas);
-    }
-
-    createSolarSystem() {
-        const group = new THREE.Group();
-        this.scene.add(group);
-        PLANET_DATA.forEach(data => {
-            const geo = new THREE.SphereGeometry(data.radius, 128, 128);
-            let mat;
-            if (data.light) {
-                mat = new THREE.MeshStandardMaterial({
-                    color: data.color,
-                    emissive: data.emissive,
-                    emissiveIntensity: 5
-                });
-                this.sun = new THREE.Mesh(geo, mat);
-                this.sun.name = data.name;
-                this.sun.userData = data;
-
-                // Inner Corona
-                const corona1Geo = new THREE.SphereGeometry(data.radius * 1.05, 64, 64);
-                const corona1Mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.3, side: THREE.BackSide });
-                this.sun.add(new THREE.Mesh(corona1Geo, corona1Mat));
-
-                // Outer Corona
-                const corona2Geo = new THREE.SphereGeometry(data.radius * 1.2, 64, 64);
-                const corona2Mat = new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.1, side: THREE.BackSide });
-                this.sun.add(new THREE.Mesh(corona2Geo, corona2Mat));
-
-                // Solar Spikes
-                const spikeGeo = new THREE.BoxGeometry(data.radius * 0.05, data.radius * 2.8, data.radius * 0.05);
-                const spikeMat = new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.2 });
-                for (let i = 0; i < 12; i++) {
-                    const spike = new THREE.Mesh(spikeGeo, spikeMat);
-                    spike.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-                    this.sun.add(spike);
-                }
-
-                const pointLight = new THREE.PointLight(0xffffff, 5000000000, 0, 1.5);
-                this.sun.add(pointLight);
-                group.add(this.sun);
-                this.planets.push(this.sun);
-            } else {
-                // ORBIT LINE
-                const orbitPoints = [];
-                for (let i = 0; i <= 128; i++) {
-                    const angle = (i / 128) * Math.PI * 2;
-                    orbitPoints.push(new THREE.Vector3(Math.cos(angle) * data.orbitRadius, 0, Math.sin(angle) * data.orbitRadius));
-                }
-                const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-                const orbitMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
-                const orbitLine = new THREE.Line(orbitGeo, orbitMat);
-                group.add(orbitLine);
-
-                mat = new THREE.MeshStandardMaterial({
-                    map: this.createPlanetTexture(data.color),
-                    roughness: 0.8,
-                    metalness: 0.1
-                });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.name = data.name;
-                mesh.userData = data;
-                mesh.position.x = data.orbitRadius;
-
-                // ATMOSPHERE MESH
-                if (data.hasAtmosphere) {
-                    const atmoGeo = new THREE.SphereGeometry(data.radius * 1.15, 64, 64);
-                    const atmoMat = new THREE.MeshBasicMaterial({
-                        color: data.atmosphereColor,
-                        transparent: true,
-                        opacity: 0.15,
-                        side: THREE.BackSide
-                    });
-                    const atmo = new THREE.Mesh(atmoGeo, atmoMat);
-                    mesh.add(atmo);
-                    mesh.userData.atmosphere = atmo;
-                }
-
-                group.add(mesh);
-                this.planets.push(mesh);
-            }
-
-            // ADD MARKER FOR MAP SELECTION
-            const markerMat = new THREE.SpriteMaterial({
-                map: this.markerTexture,
-                color: 0xffffff,
-                transparent: true,
-                depthTest: false,
-                sizeAttenuation: false
+        // 1. Process Canon Systems
+        GALAXY_CONFIG.galaxy.forEach(region => {
+            region.systems.forEach(sysData => {
+                this.createSystem(sysData, region.region);
             });
-            const marker = new THREE.Sprite(markerMat);
-            marker.scale.set(0.02, 0.02, 1);
-            marker.userData.isMarker = true;
-            marker.visible = false;
+        });
 
-            // Link marker to its planet for raycasting
-            const actualPlanet = this.planets[this.planets.length - 1];
-            marker.parentPlanet = actualPlanet;
-            actualPlanet.userData.marker = marker;
+        // 2. Generate Procedural Systems (Deterministic expansion)
+        for (let i = 0; i < 15; i++) {
+            const procSys = {
+                name: `Sector-7G-${i}`,
+                planets: [
+                    {
+                        name: `PX-${i}`,
+                        radius: this.rng.range(50, 300),
+                        type: this.rng.choice(['ice', 'desert', 'volcanic', 'industrial']),
+                        dist: 100000 + i * 20000 + this.rng.range(0, 5000)
+                    }
+                ]
+            };
+            this.createSystem(procSys, "Unknown Space");
+        }
+    }
 
-            actualPlanet.add(marker);
+    createSystem(data, regionName) {
+        const systemGroup = new THREE.Group();
+        // Spread systems in 3D space based on distance from center
+        const angle = this.rng.range(0, Math.PI * 2);
+        const orbitRadius = data.planets[0]?.dist || 50000;
+        systemGroup.position.set(
+            Math.cos(angle) * orbitRadius,
+            this.rng.range(-5000, 5000),
+            Math.sin(angle) * orbitRadius
+        );
+
+        this.container.add(systemGroup);
+        this.systems.push(systemGroup);
+
+        data.planets.forEach(pData => {
+            const planet = this.createPlanet(pData);
+            // In this hierarchical view, distances in JSON are relative to system center
+            planet.position.set(this.rng.range(-1000, 1000), 0, this.rng.range(-1000, 1000));
+            systemGroup.add(planet);
+
+            planet.userData.region = regionName;
+            planet.userData.system = data.name;
+            this.planets.push(planet);
         });
     }
 
-    update(time, isMapOpen) {
+    createPlanet(data) {
+        const biome = this.biomes[data.type] || this.biomes.industrial;
+        const geo = new THREE.SphereGeometry(data.radius, 64, 64);
+        const mat = new THREE.MeshStandardMaterial({
+            color: biome.color,
+            roughness: biome.roughness,
+            metalness: biome.metalness,
+            emissive: biome.emissive,
+            emissiveIntensity: data.type === 'volcanic' ? 2 : 0.5,
+            transparent: biome.transparent || false,
+            opacity: biome.opacity || 1
+        });
+
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.name = data.name;
+
+        // Physics Data (SOI)
+        mesh.userData = {
+            radius: data.radius,
+            type: data.type,
+            soi: data.radius * 6, // Sphere of Influence
+            gravity: data.radius * 0.01,
+            isGasGiant: data.type === 'gas_giant'
+        };
+
+        // Atmosphere visual for all non-gas giants
+        if (!mesh.userData.isGasGiant) {
+            const atmoGeo = new THREE.SphereGeometry(data.radius * 1.05, 32, 32);
+            const atmoMat = new THREE.MeshBasicMaterial({
+                color: biome.color,
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.BackSide
+            });
+            mesh.add(new THREE.Mesh(atmoGeo, atmoMat));
+        }
+
+        return mesh;
+    }
+
+    update(time) {
+        // Slow rotation of systems and planets
+        this.systems.forEach((sys, idx) => {
+            sys.rotation.y += 0.0001 * (idx % 2 === 0 ? 1 : -1);
+        });
         this.planets.forEach(p => {
-            p.rotation.y += p.userData.selfRotationSpeed;
-            if (p.userData.orbitRadius > 0) {
-                const a = time * p.userData.orbitSpeed;
-                p.position.set(Math.cos(a) * p.userData.orbitRadius, 0, Math.sin(a) * p.userData.orbitRadius);
-            }
-            if (p.userData.marker) {
-                p.userData.marker.visible = isMapOpen;
-            }
+            p.rotation.y += 0.001;
         });
     }
 }
-window.SolarSystem = SolarSystem;
-window.PLANET_DATA = PLANET_DATA;
+window.GalaxyManager = GalaxyManager;

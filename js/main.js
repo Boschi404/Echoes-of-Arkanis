@@ -2,7 +2,7 @@ class Game {
     constructor() {
         this.sceneManager = new SceneManager();
         this.input = new InputHandler();
-        this.solarSystem = new SolarSystem(this.sceneManager.scene);
+        this.galaxy = new GalaxyManager(this.sceneManager.scene);
         this.ship = new Ship(this.sceneManager.scene);
         this.environment = new Environment(this.sceneManager.scene);
         this.ui = new UIManager();
@@ -61,7 +61,7 @@ class Game {
         if (!this.input.isPlaying) return;
 
         const t = Date.now();
-        this.solarSystem.update(t, this.input.isMapOpen);
+        this.galaxy.update(t, this.input.isMapOpen);
 
         const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(this.ship.mesh.quaternion);
         const currentSpeed = this.ship.velocity.length();
@@ -84,8 +84,9 @@ class Game {
             if (!this.input.isMapOpen) {
                 let bestP = null;
                 let minA = 0.2;
-                this.solarSystem.planets.forEach((p, index) => {
-                    const toP = new THREE.Vector3().subVectors(p.position, this.ship.mesh.position).normalize();
+                this.galaxy.planets.forEach((p, index) => {
+                    const pWorld = new THREE.Vector3().setFromMatrixPosition(p.matrixWorld);
+                    const toP = new THREE.Vector3().subVectors(pWorld, this.ship.mesh.position).normalize();
                     const angle = fwd.angleTo(toP);
                     const threshold = (index === 0) ? 0.05 : minA;
                     if (angle < threshold) {
@@ -126,56 +127,65 @@ class Game {
             this.ship.updateThruster(thrusterIntensity, t);
         }
 
-        // 4. PHYSICS & COLLISIONS
+        // 4. PHYSICS & COLLISIONS (SOI + REALTIME PARENTING)
         this.ship.mesh.position.add(this.ship.velocity);
-        this.solarSystem.planets.forEach(p => {
-            const d = this.ship.mesh.position.distanceTo(p.position);
-            const minSafeDist = p.userData.radius + 2; // Radius + ship size buffer
 
-            // Solid Planet Collision
-            if (d < minSafeDist) {
-                const bounceVec = new THREE.Vector3().subVectors(this.ship.mesh.position, p.position).normalize();
-                this.ship.mesh.position.copy(p.position).addScaledVector(bounceVec, minSafeDist);
-                // Zero velocity on impact, with a tiny bounce
-                this.ship.velocity.set(0, 0, 0).addScaledVector(bounceVec, 0.1);
-            }
+        let inAtmo = false;
+        const shipWorldPos = new THREE.Vector3().setFromMatrixPosition(this.ship.mesh.matrixWorld);
 
-            // Gravity
-            if (d < p.userData.radius * 12) {
-                const force = Math.pow(p.userData.radius, 3) * 0.00000001 / Math.pow(d, 2);
-                this.ship.velocity.addScaledVector(new THREE.Vector3().subVectors(p.position, this.ship.mesh.position).normalize(), force);
-            }
+        this.galaxy.planets.forEach(p => {
+            const planetWorldPos = new THREE.Vector3().setFromMatrixPosition(p.matrixWorld);
+            const d = shipWorldPos.distanceTo(planetWorldPos);
+            const pData = p.userData;
 
-            // Atmosphere Logic
-            if (p.userData.hasAtmosphere) {
-                const atmoRadius = p.userData.radius * 1.5;
-                if (d < atmoRadius) {
-                    const atmoDepth = (atmoRadius - d) / (atmoRadius - p.userData.radius);
-                    // Subtle drag: only 0.2% max reduction per frame
-                    const dragFactor = 1 - (atmoDepth * 0.002);
-                    this.ship.velocity.multiplyScalar(dragFactor);
+            // Sphere of Influence (SOI) Gravity
+            if (d < pData.soi) {
+                const gravityStrength = (pData.gravity * 200) / (d * d + 100);
+                const gravityDir = new THREE.Vector3().subVectors(planetWorldPos, shipWorldPos).normalize();
+                this.ship.velocity.addScaledVector(gravityDir, gravityStrength);
 
-                    // Re-entry Heat (more balanced)
-                    if (currentSpeed > 40) {
-                        const heatIntensity = Math.min(1, (currentSpeed - 40) / 250 * atmoDepth);
-                        this.ship.updateHeatEffect(heatIntensity);
-                    } else {
-                        this.ship.updateHeatEffect(0);
-                    }
-
-                    // Sky Color Shift (Atmospheric Immersion)
-                    const targetSkyColor = new THREE.Color(p.userData.atmosphereColor || 0x000000);
-                    this.sceneManager.scene.background.lerp(targetSkyColor, atmoDepth * 0.05);
-
+                // Atmosphere effect if not gas giant
+                if (!pData.isGasGiant && d < pData.radius * 2) {
+                    inAtmo = true;
                     this.atmoStatus = p.name;
+                    // Sky Color
+                    const atmoDepth = Math.max(0, (pData.radius * 2 - d) / pData.radius);
+                    this.sceneManager.scene.background.lerp(p.material.color, atmoDepth * 0.05);
                 }
+            }
+
+            // Solid Collision & Dynamic Parenting
+            if (!pData.isGasGiant && d < pData.radius + 2) {
+                // Correct position to surface
+                const surfaceDir = new THREE.Vector3().subVectors(shipWorldPos, planetWorldPos).normalize();
+                const targetPos = planetWorldPos.clone().addScaledVector(surfaceDir, pData.radius + 2);
+
+                // Zero out inward velocity
+                const normalVel = this.ship.velocity.dot(surfaceDir);
+                if (normalVel < 0) {
+                    this.ship.velocity.addScaledVector(surfaceDir, -normalVel);
+                }
+
+                // Dynamic Parenting Logic: 
+                // We keep the ship in the global scene but update its position 
+                // to follow the planet's rotation by applying the same delta
+                const planetMatrix = p.matrixWorld.clone();
+                if (!this.lastPlanetMatrix || this.currentParentPlanet !== p) {
+                    this.lastPlanetMatrix = planetMatrix;
+                    this.currentParentPlanet = p;
+                } else {
+                    const invLast = this.lastPlanetMatrix.clone().invert();
+                    const relativeMove = planetMatrix.multiply(invLast);
+                    this.ship.mesh.position.applyMatrix4(relativeMove);
+                    this.lastPlanetMatrix = planetMatrix.clone();
+                }
+            } else if (this.currentParentPlanet === p) {
+                this.currentParentPlanet = null;
+                this.lastPlanetMatrix = null;
             }
         });
 
-        // Return to black space if no atmosphere
-        const anyAtmo = this.solarSystem.planets.some(p => p.userData.hasAtmosphere && this.ship.mesh.position.distanceTo(p.position) < p.userData.radius * 1.5);
-        if (!anyAtmo) {
-            this.ship.updateHeatEffect(0);
+        if (!inAtmo) {
             this.atmoStatus = null;
             this.sceneManager.scene.background.lerp(new THREE.Color(0x000000), 0.05);
         }
@@ -383,10 +393,10 @@ class Game {
         ray.setFromCamera(new THREE.Vector2(this.input.mouse.x, this.input.mouse.y), this.sceneManager.camera);
 
         // Intersect markers first
-        const markers = this.solarSystem.planets.map(p => p.userData.marker).filter(m => m);
+        const markers = this.galaxy.planets.map(p => p.userData.marker).filter(m => m);
         const markerHits = ray.intersectObjects(markers);
 
-        const planetsToTarget = this.solarSystem.planets;
+        const planetsToTarget = this.galaxy.planets;
         const planetHits = ray.intersectObjects(planetsToTarget);
 
         if (markerHits.length > 0 || planetHits.length > 0) {
