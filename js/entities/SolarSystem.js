@@ -1,9 +1,9 @@
 const PLANET_DATA = [
     { name: "Sole", radius: 15000, color: 0xffcc00, selfRotationSpeed: 0.0001, orbitRadius: 0, orbitSpeed: 0, light: true, emissive: 0xffaa00, info: "Il cuore del sistema. Massa infinita." },
-    { name: "Vulcan", radius: 1500, color: 0xaa5533, selfRotationSpeed: 0.002, orbitRadius: 60000, orbitSpeed: 0.00003, info: "Pianeta roccioso estremo. Ricco di minerali rari." },
-    { name: "Tatooine", radius: 3500, color: 0xedc9af, selfRotationSpeed: 0.001, orbitRadius: 120000, orbitSpeed: 0.000015, info: "Pianeta desertico con due soli all'orizzonte." },
-    { name: "Hoth", radius: 2500, color: 0xe0f2f7, selfRotationSpeed: 0.0005, orbitRadius: 250000, orbitSpeed: 0.000008, info: "Deserto di ghiaccio. Temperatura media -60°C." },
-    { name: "Endor", radius: 2200, color: 0x228b22, selfRotationSpeed: 0.003, orbitRadius: 400000, orbitSpeed: 0.000005, info: "Luna boscosa. Biodiversità elevata." }
+    { name: "Vulcan", radius: 1500, color: 0xaa5533, selfRotationSpeed: 0.002, orbitRadius: 60000, orbitSpeed: 0.00003, hasAtmosphere: true, atmosphereColor: 0xff4400, info: "Pianeta roccioso estremo. Ricco di minerali rari." },
+    { name: "Tatooine", radius: 3500, color: 0xedc9af, selfRotationSpeed: 0.001, orbitRadius: 120000, orbitSpeed: 0.000015, hasAtmosphere: true, atmosphereColor: 0xffccaa, info: "Pianeta desertico con due soli all'orizzonte." },
+    { name: "Hoth", radius: 2500, color: 0xe0f2f7, selfRotationSpeed: 0.0005, orbitRadius: 250000, orbitSpeed: 0.000008, hasAtmosphere: true, atmosphereColor: 0x88ccff, info: "Deserto di ghiaccio. Temperatura media -60°C." },
+    { name: "Endor", radius: 2200, color: 0x228b22, selfRotationSpeed: 0.003, orbitRadius: 400000, orbitSpeed: 0.000005, hasAtmosphere: true, atmosphereColor: 0x55ff55, info: "Luna boscosa. Biodiversità elevata." }
 ];
 
 class SolarSystem {
@@ -89,6 +89,21 @@ class SolarSystem {
                 mesh.name = data.name;
                 mesh.userData = data;
                 mesh.position.x = data.orbitRadius;
+
+                // ATMOSPHERE MESH
+                if (data.hasAtmosphere) {
+                    const atmoGeo = new THREE.SphereGeometry(data.radius * 1.15, 64, 64);
+                    const atmoMat = new THREE.MeshBasicMaterial({
+                        color: data.atmosphereColor,
+                        transparent: true,
+                        opacity: 0.15,
+                        side: THREE.BackSide
+                    });
+                    const atmo = new THREE.Mesh(atmoGeo, atmoMat);
+                    mesh.add(atmo);
+                    mesh.userData.atmosphere = atmo;
+                }
+
                 group.add(mesh);
                 this.planets.push(mesh);
             }

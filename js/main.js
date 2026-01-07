@@ -8,7 +8,7 @@ class Game {
         this.ui = new UIManager();
 
         this.lockedTarget = null;
-        this.camState = { fov: 75 };
+        this.camState = { fov: 75, mode: 'third' };
 
         this.init();
         this.animate();
@@ -46,6 +46,10 @@ class Game {
                 if (this.input.isTracking) {
                     this.input.isAutopilot = !this.input.isAutopilot;
                 }
+            }
+            if (e.code === 'KeyV') {
+                this.camState.mode = (this.camState.mode === 'third') ? 'first' : 'third';
+                this.ship.interior.visible = (this.camState.mode === 'first');
             }
         });
     }
@@ -137,7 +141,31 @@ class Game {
                 const force = Math.pow(p.userData.radius, 3) * 0.00000001 / Math.pow(d, 2);
                 this.ship.velocity.addScaledVector(new THREE.Vector3().subVectors(p.position, this.ship.mesh.position).normalize(), force);
             }
+
+            // Atmosphere Logic
+            if (p.userData.hasAtmosphere) {
+                const atmoRadius = p.userData.radius * 1.5;
+                if (d < atmoRadius) {
+                    const atmoDepth = (atmoRadius - d) / (atmoRadius - p.userData.radius);
+                    const dragFactor = 1 - (atmoDepth * 0.05); // Reduce velocity by up to 5% per frame
+                    this.ship.velocity.multiplyScalar(dragFactor);
+
+                    // Re-entry Heat
+                    if (currentSpeed > 50) {
+                        const heatIntensity = Math.min(1, (currentSpeed - 50) / 300 * atmoDepth);
+                        this.ship.updateHeatEffect(heatIntensity);
+                    } else {
+                        this.ship.updateHeatEffect(0);
+                    }
+
+                    this.atmoStatus = p.name;
+                }
+            }
         });
+        if (!this.solarSystem.planets.some(p => this.ship.mesh.position.distanceTo(p.position) < p.userData.radius * 1.5)) {
+            this.ship.updateHeatEffect(0);
+            this.atmoStatus = null;
+        }
 
         // 5. HUD & CAMERA
         if (this.lockedTarget) {
@@ -152,7 +180,7 @@ class Game {
             this.handleStandardMode(t, currentSpeed);
         }
 
-        this.ui.updateHUD(currentSpeed, this.ship.mesh.position.length());
+        this.ui.updateHUD(currentSpeed, this.ship.mesh.position.length(), this.atmoStatus);
         this.environment.updateSpeedLines(this.ship.mesh, currentSpeed);
     }
 
@@ -339,12 +367,17 @@ class Game {
         this.sceneManager.camera.fov = this.camState.fov;
         this.sceneManager.camera.updateProjectionMatrix();
 
-        const fixedDist = 14;
-        const camOffset = new THREE.Vector3(0, 3.5, fixedDist).applyQuaternion(this.ship.mesh.quaternion);
-        this.sceneManager.camera.position.copy(this.ship.mesh.position.clone().add(camOffset));
-
-        // Faster Slerp to keep up with high-speed rotation without jitter
-        this.sceneManager.camera.quaternion.slerp(this.ship.mesh.quaternion, 0.25);
+        if (this.camState.mode === 'third') {
+            const fixedDist = 14;
+            const camOffset = new THREE.Vector3(0, 3.5, fixedDist).applyQuaternion(this.ship.mesh.quaternion);
+            this.sceneManager.camera.position.copy(this.ship.mesh.position.clone().add(camOffset));
+            this.sceneManager.camera.quaternion.slerp(this.ship.mesh.quaternion, 0.25);
+        } else {
+            // First Person: Camera at cockpit position, slightly forward
+            const camOffset = new THREE.Vector3(0, 0.45, -1.25).applyQuaternion(this.ship.mesh.quaternion);
+            this.sceneManager.camera.position.copy(this.ship.mesh.position.clone().add(camOffset));
+            this.sceneManager.camera.quaternion.copy(this.ship.mesh.quaternion);
+        }
     }
 
     animate() {

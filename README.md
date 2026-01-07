@@ -27,8 +27,11 @@ Echoes of Arkanis is currently in its early development phase. We are focuses on
 - [x] Basic Newtonian flight physics.
 - [x] Procedural planetary rendering.
 - [x] Autopilot and docking systems.
-- [ ] Atmospheric flight models.
-- [ ] Quest and dialogue systems.
+- [ ] **Phase 1: Cockpit & Immersive UI** - First-person view, dynamic HUD, and radar.
+- [ ] **Phase 2: Atmosphere & Flight** - Re-entry effects, atmospheric drag, and clouds.
+- [ ] **Phase 3: Landing & Exploration** - Landing gear, EVA (walking on planets), and resource gathering.
+- [ ] **Phase 4: Combat & Story** - Laser systems, AI enemies, Star Wars-style missions.
+- [ ] **Phase 5: Galactic Scale** - Hyper-drive, multiple star systems, and map olograph.
 
 ## 🕹️ Getting Started
 

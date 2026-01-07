@@ -74,6 +74,74 @@ class Ship {
         this.thrusterGroup.add(this.flameGlow);
 
         this.thrusterGroup.visible = false;
+
+        // COCKPIT INTERIOR (Visible in First Person)
+        this.interior = new THREE.Group();
+        this.mesh.add(this.interior);
+        this.interior.visible = false;
+
+        const cockpitFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+        const dashMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1, roughness: 0.1 });
+        const screenMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.1 });
+
+        // Dashboard
+        const dashGeo = new THREE.BoxGeometry(2, 0.5, 1);
+        const dash = new THREE.Mesh(dashGeo, dashMat);
+        dash.position.set(0, 0, -1.8);
+        this.interior.add(dash);
+
+        // Screens
+        const screenGeo = new THREE.PlaneGeometry(0.6, 0.4);
+        const screenL = new THREE.Mesh(screenGeo, screenMat);
+        screenL.position.set(-0.5, 0.2, -1.75);
+        screenL.rotation.y = 0.3;
+        this.interior.add(screenL);
+
+        const screenR = new THREE.Mesh(screenGeo, screenMat);
+        screenR.position.set(0.5, 0.2, -1.75);
+        screenR.rotation.y = -0.3;
+        this.interior.add(screenR);
+
+        // Glowing buttons
+        const btnGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+        const btnMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        for (let i = 0; i < 5; i++) {
+            const btn = new THREE.Mesh(btnGeo, btnMat.clone());
+            btn.position.set(-0.7 + i * 0.1, 0.05, -1.7);
+            if (i % 2 == 0) btn.material.color.setHex(0xff0000);
+            this.interior.add(btn);
+        }
+
+        // Framework/Bars
+        const barGeo = new THREE.CylinderGeometry(0.02, 0.02, 2.5);
+        const barL = new THREE.Mesh(barGeo, cockpitFrameMat);
+        barL.rotation.z = Math.PI / 4;
+        barL.position.set(-0.8, 0.8, -1.5);
+        this.interior.add(barL);
+
+        const barR = new THREE.Mesh(barGeo, cockpitFrameMat);
+        barR.rotation.z = -Math.PI / 4;
+        barR.position.set(0.8, 0.8, -1.5);
+        this.interior.add(barR);
+
+        // RE-ENTRY HEAT EFFECT
+        this.heatShield = new THREE.Group();
+        this.mesh.add(this.heatShield);
+
+        const heatGeo = new THREE.SphereGeometry(1.5, 16, 16);
+        const heatMat = new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+        this.heatMesh = new THREE.Mesh(heatGeo, heatMat);
+        this.heatMesh.scale.set(1.5, 1, 3);
+        this.heatShield.add(this.heatMesh);
+    }
+
+    updateHeatEffect(intensity) {
+        this.heatMesh.material.opacity = intensity * 0.5;
+        const scale = 1 + intensity * 0.2;
+        this.heatMesh.scale.set(1.5 * scale, 1 * scale, 3 * scale);
+        if (intensity > 0.1) {
+            this.heatMesh.material.color.setHSL(0.05 + (1 - intensity) * 0.1, 1, 0.5);
+        }
     }
 
     updateThruster(intensity, t) {

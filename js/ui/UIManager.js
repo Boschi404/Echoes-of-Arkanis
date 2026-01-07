@@ -25,10 +25,19 @@ class UIManager {
         });
     }
 
-    updateHUD(currentSpeed, distanceToSun) {
+    updateHUD(currentSpeed, distanceToSun, atmoStatus) {
         document.getElementById('speed').innerText = `${(currentSpeed * 10).toFixed(0)} km/s`;
         document.getElementById('speed-bar').style.width = Math.min(100, currentSpeed * 2) + '%';
         document.getElementById('alt').innerText = `RIFERIMENTO SOLARE: ${distanceToSun.toFixed(0)} m`;
+
+        const atmoDiv = document.getElementById('atmo-status');
+        if (atmoStatus) {
+            atmoDiv.style.display = 'block';
+            atmoDiv.innerHTML = `<span style="color:var(--accent)">ATTENZIONE:</span> ATMOSFERA DI ${atmoStatus.toUpperCase()}`;
+            atmoDiv.style.background = 'rgba(255, 50, 0, 0.1)';
+        } else {
+            atmoDiv.style.display = 'none';
+        }
     }
 
     updateTargetOverlay(target, shipPos) {
