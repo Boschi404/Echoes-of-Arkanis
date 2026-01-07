@@ -401,7 +401,8 @@ class Game {
 
         if (markerHits.length > 0 || planetHits.length > 0) {
             const hit = markerHits.length > 0 ? markerHits[0] : planetHits[0];
-            const planet = markerHits.length > 0 ? hit.object.parentPlanet : hit.object;
+            // Marker is child of Planet Mesh, so hit.object.parent is the Planet
+            const planet = markerHits.length > 0 ? hit.object.parent : hit.object;
 
             this.ui.showPlanetTooltip(planet, this.input.mouse);
 

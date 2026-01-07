@@ -5,16 +5,57 @@ const GALAXY_CONFIG = {
         {
             "region": "Core Worlds",
             "systems": [
-                { "name": "Coruscant System", "planets": [{ "name": "Coruscant", "radius": 120, "type": "city", "dist": 15000 }] },
-                { "name": "Corellia System", "planets": [{ "name": "Corellia", "radius": 100, "type": "industrial", "dist": 25000 }] }
+                {
+                    "name": "Coruscant System",
+                    "star": { "name": "Coruscant Prime", "radius": 10000, "color": 0xffaa00 },
+                    "planets": [
+                        { "name": "Coruscant", "radius": 120, "dist": 40000, "type": "city", "speed": 0.00005, "moons": [{ "name": "Centax-1", "radius": 30, "dist": 600, "type": "ice" }, { "name": "Centax-2", "radius": 25, "dist": 900, "type": "ice" }] }
+                    ]
+                },
+                {
+                    "name": "Corellia System",
+                    "star": { "name": "Corell", "radius": 12000, "color": 0xffdd44 },
+                    "planets": [
+                        { "name": "Corellia", "radius": 140, "dist": 55000, "type": "industrial", "speed": 0.00003, "moons": [{ "name": "Gus Talon", "radius": 40, "dist": 500, "type": "desert" }] }
+                    ]
+                }
             ]
         },
         {
             "region": "Outer Rim",
             "systems": [
-                { "name": "Tatoo System", "stars": ["Tatoo I", "Tatoo II"], "planets": [{ "name": "Tatooine", "radius": 80, "type": "desert", "dist": 35000 }] },
-                { "name": "Hoth System", "planets": [{ "name": "Hoth", "radius": 70, "type": "ice", "dist": 50000 }] },
-                { "name": "Bespin System", "planets": [{ "name": "Bespin", "radius": 500, "type": "gas_giant", "dist": 70000 }] }
+                {
+                    "name": "Tatoo System",
+                    "star": { "name": "Tatoo I", "radius": 9000, "color": 0xffcc00 }, // Binary not supported yet, simplifying to 1 star
+                    "planets": [
+                        { "name": "Tatooine", "radius": 110, "dist": 60000, "type": "desert", "speed": 0.00004, "moons": [{ "name": "Ghomrassen", "radius": 20, "dist": 400, "type": "rock" }, { "name": "Guermessa", "radius": 15, "dist": 700, "type": "rock" }] }
+                    ]
+                },
+                {
+                    "name": "Hoth System",
+                    "star": { "name": "Hoth Prime", "radius": 8500, "color": 0xaaccff },
+                    "planets": [
+                        { "name": "Hoth", "radius": 100, "dist": 80000, "type": "ice", "speed": 0.00002, "moons": [] }
+                    ]
+                },
+                {
+                    "name": "Bespin System",
+                    "star": { "name": "Bespin Star", "radius": 9500, "color": 0xffaa44 },
+                    "planets": [
+                        { "name": "Bespin", "radius": 1100, "dist": 120000, "type": "gas_giant", "speed": 0.00001, "moons": [] }
+                    ]
+                },
+                {
+                    "name": "Endor System",
+                    "star": { "name": "Endor Prime", "radius": 8000, "color": 0xffffff },
+                    "planets": [
+                        {
+                            "name": "Endor Prime (Gas Giant)", "radius": 900, "dist": 90000, "type": "gas_giant", "speed": 0.00002, "moons": [
+                                { "name": "Forest Moon of Endor", "radius": 90, "dist": 2500, "type": "forest" }
+                            ]
+                        }
+                    ]
+                }
             ]
         }
     ]
@@ -24,18 +65,34 @@ class GalaxyManager {
     constructor(scene) {
         this.scene = scene;
         this.rng = new MathUtils(GALAXY_CONFIG.seed);
-        this.planets = [];
+        this.planets = []; // All collision bodies (Planets + Moons)
         this.systems = [];
+        this.markerTexture = this.createMarkerTexture();
         this.biomes = {
-            city: { color: 0x444455, roughness: 0.8, metalness: 0.5, emissive: 0x111122 },
-            industrial: { color: 0x554433, roughness: 0.9, metalness: 0.7, emissive: 0x221100 },
+            city: { color: 0x444455, roughness: 0.6, metalness: 0.8, emissive: 0x111122 },
+            industrial: { color: 0x554433, roughness: 0.8, metalness: 0.6, emissive: 0x221100 },
             desert: { color: 0xedc9af, roughness: 1.0, metalness: 0.0, emissive: 0x000000 },
-            ice: { color: 0xddffff, roughness: 0.1, metalness: 0.2, emissive: 0x001122 },
-            gas_giant: { color: 0xffaa44, roughness: 0.5, metalness: 0.0, emissive: 0x221100, transparent: true, opacity: 0.8 },
-            volcanic: { color: 0x221111, roughness: 0.9, metalness: 0.1, emissive: 0xff2200 }
+            ice: { color: 0xddffff, roughness: 0.2, metalness: 0.3, emissive: 0x001122 },
+            gas_giant: { color: 0xffaa44, roughness: 0.4, metalness: 0.0, emissive: 0x110000 },
+            volcanic: { color: 0x221111, roughness: 0.9, metalness: 0.1, emissive: 0xff2200 },
+            forest: { color: 0x228b22, roughness: 0.8, metalness: 0.1, emissive: 0x000000 },
+            rock: { color: 0x888888, roughness: 0.9, metalness: 0.1, emissive: 0x000000 }
         };
 
         this.init();
+    }
+
+    createMarkerTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(0, 243, 255, 1)');
+        grad.addColorStop(0.3, 'rgba(0, 243, 255, 0.5)');
+        grad.addColorStop(1, 'rgba(0, 243, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        return new THREE.CanvasTexture(canvas);
     }
 
     init() {
@@ -44,101 +101,204 @@ class GalaxyManager {
 
         // 1. Process Canon Systems
         GALAXY_CONFIG.galaxy.forEach(region => {
-            region.systems.forEach(sysData => {
-                this.createSystem(sysData, region.region);
+            region.systems.forEach((sysData, idx) => {
+                // Space them out significantly to simulate separate systems
+                // In a real seamless game, they would be lightyears apart.
+                // Here we put them far enough that you can't see one from another easily without travel.
+                const systemPos = new THREE.Vector3(
+                    this.rng.range(-500000, 500000),
+                    this.rng.range(-100000, 100000),
+                    this.rng.range(-500000, 500000)
+                );
+                this.createSystem(sysData, systemPos, region.region);
             });
         });
-
-        // 2. Generate Procedural Systems (Deterministic expansion)
-        for (let i = 0; i < 15; i++) {
-            const procSys = {
-                name: `Sector-7G-${i}`,
-                planets: [
-                    {
-                        name: `PX-${i}`,
-                        radius: this.rng.range(50, 300),
-                        type: this.rng.choice(['ice', 'desert', 'volcanic', 'industrial']),
-                        dist: 100000 + i * 20000 + this.rng.range(0, 5000)
-                    }
-                ]
-            };
-            this.createSystem(procSys, "Unknown Space");
-        }
     }
 
-    createSystem(data, regionName) {
+    createSystem(data, position, regionName) {
         const systemGroup = new THREE.Group();
-        // Spread systems in 3D space based on distance from center
-        const angle = this.rng.range(0, Math.PI * 2);
-        const orbitRadius = data.planets[0]?.dist || 50000;
-        systemGroup.position.set(
-            Math.cos(angle) * orbitRadius,
-            this.rng.range(-5000, 5000),
-            Math.sin(angle) * orbitRadius
-        );
-
+        systemGroup.position.copy(position);
         this.container.add(systemGroup);
         this.systems.push(systemGroup);
 
-        data.planets.forEach(pData => {
-            const planet = this.createPlanet(pData);
-            // In this hierarchical view, distances in JSON are relative to system center
-            planet.position.set(this.rng.range(-1000, 1000), 0, this.rng.range(-1000, 1000));
-            systemGroup.add(planet);
+        // --- STAR ---
+        // Using "Real-ish" scale: Stars are ~100x bigger than planets
+        const starGeo = new THREE.SphereGeometry(data.star.radius, 64, 64);
+        const starMat = new THREE.MeshBasicMaterial({ color: data.star.color });
+        const star = new THREE.Mesh(starGeo, starMat);
+        star.name = data.star.name;
 
-            planet.userData.region = regionName;
-            planet.userData.system = data.name;
-            this.planets.push(planet);
+        // Star Glow/Corona
+        const corona = new THREE.Mesh(
+            new THREE.SphereGeometry(data.star.radius * 1.5, 32, 32),
+            new THREE.MeshBasicMaterial({ color: data.star.color, transparent: true, opacity: 0.15, side: THREE.BackSide })
+        );
+        star.add(corona);
+
+        // Light Source
+        const light = new THREE.PointLight(data.star.color, 2, 500000);
+        star.add(light);
+
+        systemGroup.add(star);
+
+        // --- PLANETS ---
+        data.planets.forEach(pData => {
+            const planet = this.createCelestialBody(pData, false);
+            planet.userData.parentSystem = star;
+            planet.userData.orbitSpeed = pData.speed;
+            planet.userData.orbitDist = pData.dist;
+            planet.userData.angle = this.rng.range(0, Math.PI * 2);
+
+            // Set initial position
+            planet.position.set(
+                Math.cos(planet.userData.angle) * pData.dist,
+                0,
+                Math.sin(planet.userData.angle) * pData.dist
+            );
+
+            systemGroup.add(planet);
+            this.planets.push(planet); // Add to global list for logic
+
+            // Start Position for Satellites relative to this planet
+            if (pData.moons) {
+                pData.moons.forEach(mData => {
+                    const moon = this.createCelestialBody(mData, true);
+                    moon.userData.parentBody = planet; // Orbits the planet
+                    moon.userData.orbitSpeed = this.rng.range(0.001, 0.003); // Faster moon orbits
+                    moon.userData.orbitDist = mData.dist;
+                    moon.userData.angle = this.rng.range(0, Math.PI * 2);
+
+                    // Add moon to the SYSTEM group, but mathematically it orbits the planet
+                    // We render it as a child of the Planet mesh? 
+                    // No, for cleaner physics/world transform, let's keep it in system group but update relative to planet
+                    // Actually, parenting to planet makes logic easier for "sticking".
+                    // Let's parent to the Planet Mesh.
+
+                    moon.position.set(
+                        Math.cos(moon.userData.angle) * mData.dist,
+                        0,
+                        Math.sin(moon.userData.angle) * mData.dist
+                    );
+                    planet.add(moon);
+
+                    // Add moon to collision list
+                    this.planets.push(moon);
+                });
+            }
         });
+
+        // Add System Marker for Map
+        const marker = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.markerTexture, color: data.star.color, transparent: true }));
+        marker.scale.set(5000, 5000, 1);
+        marker.position.copy(position);
+        marker.userData.isSystemMarker = true;
+        // this.scene.add(marker); // Maybe add to map layer? Keeping it simple for now.
     }
 
-    createPlanet(data) {
-        const biome = this.biomes[data.type] || this.biomes.industrial;
+    createCelestialBody(data, isMoon) {
+        const biome = this.biomes[data.type] || this.biomes.rock;
         const geo = new THREE.SphereGeometry(data.radius, 64, 64);
         const mat = new THREE.MeshStandardMaterial({
             color: biome.color,
             roughness: biome.roughness,
             metalness: biome.metalness,
             emissive: biome.emissive,
-            emissiveIntensity: data.type === 'volcanic' ? 2 : 0.5,
-            transparent: biome.transparent || false,
-            opacity: biome.opacity || 1
+            emissiveIntensity: 0.5,
+            transparent: data.type === 'gas_giant',
+            opacity: data.type === 'gas_giant' ? 0.8 : 1
         });
 
         const mesh = new THREE.Mesh(geo, mat);
         mesh.name = data.name;
 
-        // Physics Data (SOI)
+        // Physics & Gameplay Data
         mesh.userData = {
             radius: data.radius,
             type: data.type,
-            soi: data.radius * 6, // Sphere of Influence
-            gravity: data.radius * 0.01,
-            isGasGiant: data.type === 'gas_giant'
+            soi: data.radius * 4,
+            gravity: data.radius * 0.02,
+            isGasGiant: data.type === 'gas_giant',
+            isMoon: isMoon,
+            marker: this.createMapMarker(data.radius) // Function below
         };
 
-        // Atmosphere visual for all non-gas giants
-        if (!mesh.userData.isGasGiant) {
-            const atmoGeo = new THREE.SphereGeometry(data.radius * 1.05, 32, 32);
+        // Atmosphere visual
+        if (!mesh.userData.isGasGiant && data.radius > 50) {
+            const atmoGeo = new THREE.SphereGeometry(data.radius * 1.03, 32, 32);
             const atmoMat = new THREE.MeshBasicMaterial({
                 color: biome.color,
                 transparent: true,
-                opacity: 0.1,
+                opacity: 0.12,
                 side: THREE.BackSide
             });
             mesh.add(new THREE.Mesh(atmoGeo, atmoMat));
         }
 
+        // Attach Marker
+        mesh.add(mesh.userData.marker);
+
         return mesh;
     }
 
-    update(time) {
-        // Slow rotation of systems and planets
-        this.systems.forEach((sys, idx) => {
-            sys.rotation.y += 0.0001 * (idx % 2 === 0 ? 1 : -1);
+    createMapMarker(radius) {
+        const markerMat = new THREE.SpriteMaterial({ map: this.markerTexture, color: 0xffffff, transparent: true, depthTest: false });
+        const marker = new THREE.Sprite(markerMat);
+        // Constant screen size illusion or just big enough
+        const scale = radius * 50;
+        marker.scale.set(scale, scale, 1);
+        marker.visible = false;
+        marker.parentPlanet = null; // Will be set by logic if needed, or parent is just the mesh
+        return marker;
+    }
+
+    update(time, isMapOpen) {
+        // Update Orbital Mechanics
+        this.systems.forEach(sys => {
+            // Stars don't move (relative to system)
         });
+
+        // Planets orbit stars
+        // Since we pushed all bodies to this.planets, we need to distinguish
+        // For physics parenting, satellites are children of planets in ThreeJS graph.
+        // Planets are children of system group.
+
+        // We only need to animate the "Planets" (children of System) manually for orbits.
+        // Moons (children of Planets) will move with planets automatically, 
+        // but we need to rotate them around the planet.
+
         this.planets.forEach(p => {
-            p.rotation.y += 0.001;
+            // Rotate on axis
+            p.rotation.y += 0.0005;
+
+            // Map Marker Visibility
+            if (p.userData.marker) {
+                p.userData.marker.visible = isMapOpen;
+                // If map is open, ensure marker size is visible? 
+                // The Sprite handles billboard.
+            }
+
+            // Orbital Logic
+            if (p.parent && p.parent.type === 'Group') {
+                // This is a Planet orbiting a Star (System Group Center)
+                if (p.userData.orbitDist) {
+                    p.userData.angle += p.userData.orbitSpeed;
+                    p.position.set(
+                        Math.cos(p.userData.angle) * p.userData.orbitDist,
+                        0,
+                        Math.sin(p.userData.angle) * p.userData.orbitDist
+                    );
+                }
+            } else if (p.parent && p.parent.type === 'Mesh') {
+                // This is a Moon orbiting a Planet
+                if (p.userData.orbitDist) {
+                    p.userData.angle += p.userData.orbitSpeed;
+                    p.position.set(
+                        Math.cos(p.userData.angle) * p.userData.orbitDist,
+                        0,
+                        Math.sin(p.userData.angle) * p.userData.orbitDist
+                    );
+                }
+            }
         });
     }
 }
