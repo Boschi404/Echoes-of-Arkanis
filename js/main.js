@@ -211,46 +211,28 @@ class Game {
     handleAutopilot(t, fwd) {
         this.ui.updateAutopilotStatus(this.input.isTracking, this.input.isAutopilot);
         const shipPos = this.ship.mesh.position;
-        let predictedPos = this.lockedTarget.position.clone();
-        const currentVel = this.ship.velocity.clone();
-        const currentSpeed = currentVel.length();
-
-        // 1. ADVANCED TARGET CALCULATION (Shadowing System)
+        // 1. WORLD POSITION TARGETING (Fix for Hierarchy Issues)
         const pData = this.lockedTarget.userData;
-        const realTargetPos = this.lockedTarget.position;
 
-        // Calculate Planet Velocity Vector
-        let planetVel = new THREE.Vector3(0, 0, 0);
-        if (pData.orbitRadius > 0) {
-            const angle = t * pData.orbitSpeed;
-            // Tangent vector to the orbit: v = (-sin(a), 0, cos(a)) * speedMagnitude
-            planetVel.set(-Math.sin(angle), 0, Math.cos(angle)).multiplyScalar(pData.orbitRadius * pData.orbitSpeed * 1000);
-        }
+        // Get absolute world position of the target
+        const realTargetPos = new THREE.Vector3();
+        this.lockedTarget.getWorldPosition(realTargetPos);
+
+        // Initialize prediction with current world pos
+        let predictedPos = realTargetPos.clone();
 
         const shipToPlanet = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
 
-        // Check if Planet is moving towards ship (Head-on risk)
-        // Dot(PlanetVelocity, shipToPlanet) < -threshold means it's coming at us
-        const isHeadOn = planetVel.dot(shipToPlanet) < -10;
+        // 2. ORBITAL PREDICTION (Simplified for World Space compatibility)
+        // Calculating future world position for nested objects is expensive/complex.
+        // For now, we will lead the target slightly based on its estimated velocity if available.
+        // But simply targeting the current World Position fixes the "Fly to Coruscant" bug.
 
         if (this.input.isAutopilot) {
-            if (isHeadOn && shipPos.distanceTo(realTargetPos) < pData.radius * 5) {
-                // TAIL-GATING MANEUVER: Aim for a point BEHIND the planet's path
-                const tailOffset = planetVel.clone().normalize().multiplyScalar(-pData.radius * 2);
-                predictedPos.copy(realTargetPos).add(tailOffset);
-            } else {
-                // STANDARD PREDICTION (Interception)
-                const cruiseSpeedSec = Math.max(currentSpeed * 60, 2500);
-                for (let i = 0; i < 5; i++) {
-                    const dist = shipPos.distanceTo(predictedPos);
-                    const timeToArrivalSeconds = dist / cruiseSpeedSec;
-                    const futureTime = t + timeToArrivalSeconds * 1000;
-                    if (pData.orbitRadius > 0) {
-                        const angle = futureTime * pData.orbitSpeed;
-                        predictedPos.set(Math.cos(angle) * pData.orbitRadius, 0, Math.sin(angle) * pData.orbitRadius);
-                    } else break;
-                }
-            }
+            // Basic velocity leading if we wanted it, but for now strict tracking is safer
+            // to ensure we actually go to the planet.
+            // We can re-enable complex interception once basic navigation is confirmed.
+            predictedPos.copy(realTargetPos);
         } else {
             predictedPos.copy(realTargetPos);
         }
