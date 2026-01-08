@@ -338,62 +338,79 @@ class Game {
             // Total relative speed (magnitude of relative velocity vector)
             const relativeSpeed = relativeVelocity.length();
 
-            // CONSTANTS - EARLY & STRONG BRAKES
-            const maxCruiseSpeed = 300; // Slower cruise for control
-            const brakeAcc = 0.6; // Strong physical brakes
-            const safetyBuffer = 4000; // Huge buffer to start checking early
+            // PHYSICS-BASED BRAKING CONSTANTS
+            const brakeAcc = 0.8; // Brake acceleration (units per frame²)
+            const safetyMargin = 1.2; // 20% safety margin for braking distance
 
-            // Calculate braking distance based on closing speed (approach component)
-            const brakingDistanceNeeded = ((Math.abs(closingSpeed) * Math.abs(closingSpeed)) / (2 * brakeAcc)) * 1.5;
-            const brakingThreshold = targetParkDist + brakingDistanceNeeded + safetyBuffer;
+            // Calculate EXACT braking distance needed to stop from current closing speed
+            // Using kinematic equation: d = v² / (2a)
+            const brakingDistanceNeeded = (closingSpeed * closingSpeed) / (2 * brakeAcc);
+            const safeBrakingDistance = brakingDistanceNeeded * safetyMargin;
+
+            // Distance from current position to parking point
+            const distToPark = distToSurface - targetParkDist;
 
             if (dot > 0.95) {
-                const distToPark = distToSurface - targetParkDist;
+                // Ship is pointing at target
 
-                if (distToSurface > brakingThreshold) {
-                    // CRUISE PHASE: Gradually reach max cruise speed
-                    if (closingSpeed < maxCruiseSpeed) {
-                        const accelFactor = Math.min(1, (maxCruiseSpeed - closingSpeed) / 50);
-                        this.ship.velocity.addScaledVector(fwd, 0.05 * accelFactor);
-                        this.ship.updateThruster(accelFactor, t);
+                if (distToPark > safeBrakingDistance && closingSpeed > 0) {
+                    // COAST/CRUISE PHASE - We're far enough that we don't need to brake yet
+                    if (closingSpeed < 50) {
+                        // Gentle acceleration to maintain minimum approach speed
+                        this.ship.velocity.addScaledVector(fwd, 0.03);
+                        this.ship.updateThruster(0.3, t);
                     } else {
+                        // Just coast
                         this.ship.updateThruster(0, t);
                     }
-                } else if (distToPark > 10) {
-                    // SMOOTH BRAKING PHASE
-                    // Calculate desired speed based on distance remaining to park
-                    const speedRatio = Math.max(0, distToPark / brakingThreshold);
-                    const targetSpeed = maxCruiseSpeed * speedRatio;
 
-                    if (closingSpeed > targetSpeed) {
-                        // Brake along the relative velocity vector, not just forward
+                } else if (distToPark > 10) {
+                    // ACTIVE BRAKING PHASE
+                    // Calculate ideal speed for current distance using: v = sqrt(2 * a * d)
+                    const idealSpeed = Math.sqrt(2 * brakeAcc * distToPark);
+
+                    if (closingSpeed > idealSpeed) {
+                        // We're going too fast - apply brakes along relative velocity vector
                         const relVelLen = relativeVelocity.length();
                         if (relVelLen > 0.001) {
                             const brakeDir = relativeVelocity.clone().divideScalar(relVelLen).negate();
                             this.ship.velocity.addScaledVector(brakeDir, brakeAcc);
                         }
-                        this.ship.updateThruster(0.3 + (closingSpeed / maxCruiseSpeed) * 0.7, t);
+
+                        // Visual feedback - thruster intensity based on braking effort
+                        const brakeIntensity = Math.min(1, closingSpeed / 500);
+                        this.ship.updateThruster(brakeIntensity * 0.8, t);
+                    } else if (closingSpeed < idealSpeed * 0.8) {
+                        // We're going too slow - gentle acceleration
+                        this.ship.velocity.addScaledVector(fwd, 0.02);
+                        this.ship.updateThruster(0.2, t);
                     } else {
+                        // Speed is good - maintain
                         this.ship.updateThruster(0, t);
                     }
+
                 } else {
-                    // PARKING STABILIZATION (Match Orbital Velocity)
-                    // Smoothly match both magnitude AND direction of planet's velocity
-                    this.ship.velocity.lerp(planetVel, 0.08);
+                    // FINAL PARKING STABILIZATION (< 10 units from target)
+                    // Match planet's orbital velocity for stable parking
+                    this.ship.velocity.lerp(planetVel, 0.1);
                     this.ship.updateThruster(0, t);
 
                     // Sanity check to prevent velocity explosion
                     if (this.ship.velocity.length() > 5000) this.ship.velocity.setLength(5000);
 
-                    // Gentle corrective drift to maintain parking distance
-                    const correctionPower = Math.min(0.02, Math.abs(distToPark) * 0.0001);
-                    const correctionDir = distToPark > 0 ? toRealT : toRealT.clone().negate();
-                    this.ship.velocity.addScaledVector(correctionDir, correctionPower);
+                    // Fine position correction to maintain exact parking distance
+                    if (Math.abs(distToPark) > 1) {
+                        const correctionPower = Math.min(0.015, Math.abs(distToPark) * 0.001);
+                        const correctionDir = distToPark > 0 ? toRealT : toRealT.clone().negate();
+                        this.ship.velocity.addScaledVector(correctionDir, correctionPower);
+                    }
                 }
             } else {
+                // Ship not pointing at target - turn first, no thrust
                 this.ship.updateThruster(0, t);
-                if (distToSurface < brakingThreshold && closingSpeed > 50) {
-                    // Emergency brake using relative velocity vector
+
+                // Emergency brake if we're approaching too fast at wrong angle
+                if (distToPark < safeBrakingDistance && closingSpeed > 100) {
                     const relVelLen = relativeVelocity.length();
                     const brakeVec = relVelLen > 0.001 ? relativeVelocity.clone().divideScalar(relVelLen).negate() : new THREE.Vector3();
                     this.ship.velocity.addScaledVector(brakeVec, brakeAcc * 1.5);
