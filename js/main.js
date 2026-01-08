@@ -249,12 +249,11 @@ class Game {
 
                 // Velocity direction is cross product of up (0,1,0) and radius, scaled by speed
                 // V = Omega x R
-                const up = new THREE.Vector3(0, 1, 0);
-                planetVel.crossVectors(up, radiusVector).normalize();
-
-                // Speed is roughly: angularSpeed * dist
+                // Speed is units per ms: angularSpeed * distance
                 const speedVal = pData.orbitSpeed * pData.orbitDist;
-                planetVel.multiplyScalar(speedVal * 1000); // Scale factor for prediction magnitude
+                // planetVel direction is currently normalized from cross()
+                // We need units per frame. At ~60fps, 1 frame is ~16ms.
+                planetVel.multiplyScalar(speedVal * 20); // Reasonable scalar for frame-based velocity
             }
 
             // Check for Head-on collision risk
@@ -262,7 +261,8 @@ class Game {
 
             if (isHeadOn && shipPos.distanceTo(realTargetPos) < pData.radius * 8) {
                 // Shadow/Tail-gating: Aim behind
-                const tailOffset = planetVel.clone().normalize().multiplyScalar(-pData.radius * 4);
+                const tailDir = planetVel.lengthSq() > 0 ? planetVel.clone().normalize() : new THREE.Vector3(0, 0, 1);
+                const tailOffset = tailDir.multiplyScalar(-pData.radius * 4);
                 predictedPos.add(tailOffset);
             } else {
                 // Lead the target
@@ -372,6 +372,9 @@ class Game {
                     this.ship.velocity.lerp(planetVel, 0.05);
                     this.ship.updateThruster(0, t);
 
+                    // Sanity check to prevent velocity explosion
+                    if (this.ship.velocity.length() > 5000) this.ship.velocity.setLength(5000);
+
                     // Gentle corrective drift
                     const correctionPower = Math.min(0.02, Math.abs(distToPark) * 0.0001);
                     const correctionDir = distToPark > 0 ? toRealT : toRealT.clone().negate();
@@ -380,10 +383,14 @@ class Game {
             } else {
                 this.ship.updateThruster(0, t);
                 if (distToSurface < brakingThreshold && relativeSpeed > 50) {
-                    const brakeVec = this.ship.velocity.clone().normalize().negate();
+                    const bLen = this.ship.velocity.length();
+                    const brakeVec = bLen > 0.001 ? this.ship.velocity.clone().divideScalar(bLen).negate() : new THREE.Vector3();
                     this.ship.velocity.addScaledVector(brakeVec, brakeAcc * 1.5);
                 }
             }
+
+            // Global velocity cap for stability
+            if (this.ship.velocity.length() > 5000) this.ship.velocity.setLength(5000);
         }
     }
 
