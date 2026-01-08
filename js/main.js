@@ -211,6 +211,9 @@ class Game {
     handleAutopilot(t, fwd) {
         this.ui.updateAutopilotStatus(this.input.isTracking, this.input.isAutopilot);
         const shipPos = this.ship.mesh.position;
+        const currentVel = this.ship.velocity.clone();
+        const currentSpeed = currentVel.length();
+
         // 1. WORLD POSITION TARGETING (Fix for Hierarchy Issues)
         const pData = this.lockedTarget.userData;
 
