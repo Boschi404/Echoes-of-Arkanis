@@ -319,13 +319,14 @@ class Game {
             const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
             const relativeSpeed = this.ship.velocity.dot(toRealT);
 
-            // CONSTANTS - SMOOTHER BRAKES
-            const maxCruiseSpeed = 400;
-            const brakeAcc = 0.15; // Restoration of softer braking
-            const safetyBuffer = 2000;
+            // CONSTANTS - EARLY & STRONG BRAKES
+            const maxCruiseSpeed = 300; // Slower cruise for control
+            const brakeAcc = 0.6; // Strong physical brakes
+            const safetyBuffer = 4000; // Huge buffer to start checking early
 
             // Calculate braking distance needed to reach speed 0 at targetParkDist
-            const brakingDistanceNeeded = (relativeSpeed * relativeSpeed) / (2 * brakeAcc);
+            // We multiply by 1.5 to pretend we need MORE space, triggering brakes earlier
+            const brakingDistanceNeeded = ((relativeSpeed * relativeSpeed) / (2 * brakeAcc)) * 1.5;
             const brakingThreshold = targetParkDist + brakingDistanceNeeded + safetyBuffer;
 
             if (dot > 0.95) {
