@@ -69,6 +69,7 @@ class GalaxyManager {
         this.celestialBodies = []; // All interactable bodies: Stars, Planets, Moons
         this.systems = [];
         this.markerTexture = this.createMarkerTexture();
+        this.textureGen = new ProceduralTextures();
         this.biomes = {
             city: { color: 0x444455, roughness: 0.6, metalness: 0.8, emissive: 0x111122 },
             industrial: { color: 0x554433, roughness: 0.8, metalness: 0.6, emissive: 0x221100 },
@@ -138,7 +139,8 @@ class GalaxyManager {
         // --- STAR ---
         // Using "Real-ish" scale: Stars are ~100x bigger than planets
         const starGeo = new THREE.SphereGeometry(data.star.radius, 128, 128);
-        const starMat = new THREE.MeshBasicMaterial({ color: data.star.color });
+        const sunTexture = this.textureGen.createSunTexture(1024, data.star.color);
+        const starMat = new THREE.MeshBasicMaterial({ map: sunTexture });
         const star = new THREE.Mesh(starGeo, starMat);
         star.name = data.star.name;
 
@@ -234,8 +236,12 @@ class GalaxyManager {
     createCelestialBody(data, isMoon) {
         const biome = this.biomes[data.type] || this.biomes.rock;
         const geo = new THREE.SphereGeometry(data.radius, 128, 128);
+
+        // Use procedural texture
+        const planetTexture = this.textureGen.createPlanetTexture(1024, data.type);
+
         const mat = new THREE.MeshStandardMaterial({
-            color: biome.color,
+            map: planetTexture,
             roughness: biome.roughness,
             metalness: biome.metalness,
             emissive: biome.emissive,
