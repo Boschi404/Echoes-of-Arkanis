@@ -142,7 +142,7 @@ class Game {
 
             // Sphere of Influence (SOI) Gravity
             if (d < pData.soi) {
-                const gravityStrength = (pData.gravity * 200) / (d * d + 100);
+                const gravityStrength = (pData.gravity * 20) / (d * d + 100);
                 const gravityDir = new THREE.Vector3().subVectors(planetWorldPos, shipWorldPos).normalize();
                 this.ship.velocity.addScaledVector(gravityDir, gravityStrength);
 

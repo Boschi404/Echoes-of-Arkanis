@@ -258,7 +258,7 @@ class GalaxyManager {
             radius: data.radius,
             type: data.type,
             soi: data.radius * 4,
-            gravity: data.radius * 0.02,
+            gravity: data.radius * 0.002,
             isGasGiant: data.type === 'gas_giant',
             isMoon: isMoon,
             marker: this.createMapMarker(data.radius) // Function below
