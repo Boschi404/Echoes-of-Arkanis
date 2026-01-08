@@ -30,7 +30,7 @@ class Game {
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('hud-container').style.display = 'grid';
             document.getElementById('crosshair').style.display = 'block';
-            this.ship.mesh.position.set(0, 2000, 100000);
+            this.ship.mesh.position.set(0, 500, 15000); // Spawning closer to Coruscant (Radius 10k) to see the star immediately
         };
 
         document.getElementById('start-btn').addEventListener('click', startGame);
