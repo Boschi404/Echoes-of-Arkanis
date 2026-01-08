@@ -249,6 +249,9 @@ class Game {
 
                 // Velocity direction is cross product of up (0,1,0) and radius, scaled by speed
                 // V = Omega x R
+                const up = new THREE.Vector3(0, 1, 0);
+                planetVel.crossVectors(up, radiusVector).normalize();
+
                 // Speed is units per ms: angularSpeed * distance
                 const speedVal = pData.orbitSpeed * pData.orbitDist;
                 // planetVel direction is currently normalized from cross()
