@@ -338,9 +338,9 @@ class Game {
             // Total relative speed (magnitude of relative velocity vector)
             const relativeSpeed = relativeVelocity.length();
 
-            // PHYSICS-BASED BRAKING CONSTANTS
-            const brakeAcc = 0.8; // Brake acceleration (units per frame²)
-            const safetyMargin = 1.2; // 20% safety margin for braking distance
+            // PHYSICS-BASED BRAKING CONSTANTS (Tuned for smooth, gradual approach)
+            const brakeAcc = 0.35; // Gentler brake acceleration for smoother deceleration
+            const safetyMargin = 1.8; // Larger margin = earlier, more gradual braking
 
             // Calculate EXACT braking distance needed to stop from current closing speed
             // Using kinematic equation: d = v² / (2a)
@@ -374,16 +374,16 @@ class Game {
                         const relVelLen = relativeVelocity.length();
                         if (relVelLen > 0.001) {
                             const brakeDir = relativeVelocity.clone().divideScalar(relVelLen).negate();
-                            this.ship.velocity.addScaledVector(brakeDir, brakeAcc);
+                            this.ship.velocity.addScaledVector(brakeDir, brakeAcc * 0.5);
                         }
 
                         // Visual feedback - thruster intensity based on braking effort
-                        const brakeIntensity = Math.min(1, closingSpeed / 500);
-                        this.ship.updateThruster(brakeIntensity * 0.8, t);
+                        const brakeIntensity = Math.min(0.5, closingSpeed / 1000);
+                        this.ship.updateThruster(brakeIntensity, t);
                     } else if (closingSpeed < idealSpeed * 0.8) {
                         // We're going too slow - gentle acceleration
-                        this.ship.velocity.addScaledVector(fwd, 0.02);
-                        this.ship.updateThruster(0.2, t);
+                        this.ship.velocity.addScaledVector(fwd, 0.01);
+                        this.ship.updateThruster(0.1, t);
                     } else {
                         // Speed is good - maintain
                         this.ship.updateThruster(0, t);
@@ -391,8 +391,8 @@ class Game {
 
                 } else {
                     // FINAL PARKING STABILIZATION (< 10 units from target)
-                    // Match planet's orbital velocity for stable parking
-                    this.ship.velocity.lerp(planetVel, 0.1);
+                    // Very gradual velocity matching for smooth final approach
+                    this.ship.velocity.lerp(planetVel, 0.03);
                     this.ship.updateThruster(0, t);
 
                     // Sanity check to prevent velocity explosion
@@ -400,7 +400,7 @@ class Game {
 
                     // Fine position correction to maintain exact parking distance
                     if (Math.abs(distToPark) > 1) {
-                        const correctionPower = Math.min(0.015, Math.abs(distToPark) * 0.001);
+                        const correctionPower = Math.min(0.005, Math.abs(distToPark) * 0.0003);
                         const correctionDir = distToPark > 0 ? toRealT : toRealT.clone().negate();
                         this.ship.velocity.addScaledVector(correctionDir, correctionPower);
                     }
