@@ -285,7 +285,7 @@ class Game {
         // Lateral Damping (Kill drift) - REDUCED for more "clumsy" 0-G feel
         if (currentSpeed > 2) {
             const lateralVel = currentVel.clone().addScaledVector(toT, -currentVel.dot(toT));
-            this.ship.velocity.addScaledVector(lateralVel, -0.005); // Way more drift
+            this.ship.velocity.addScaledVector(lateralVel, -0.05); // Stronger drift correction
         }
 
         // BANK INTO TURN
@@ -318,10 +318,10 @@ class Game {
             const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
             const relativeSpeed = this.ship.velocity.dot(toRealT);
 
-            // CONSTANTS - WEAKENED BRAKES
-            const maxCruiseSpeed = 400;
-            const brakeAcc = 0.12; // Far less effective brakes
-            const safetyBuffer = 1500; // Needs way more space to stop now
+            // CONSTANTS - STRONGER BRAKES
+            const maxCruiseSpeed = 350;
+            const brakeAcc = 0.8; // Much stronger brakes
+            const safetyBuffer = 3000; // More space to stop
 
             // Calculate braking distance needed to reach speed 0 at targetParkDist
             const brakingDistanceNeeded = (relativeSpeed * relativeSpeed) / (2 * brakeAcc);
