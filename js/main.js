@@ -30,10 +30,7 @@ class Game {
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('hud-container').style.display = 'grid';
             document.getElementById('crosshair').style.display = 'block';
-            document.getElementById('crosshair').style.display = 'block';
-            document.getElementById('crosshair').style.display = 'block';
-            document.getElementById('crosshair').style.display = 'block';
-            this.ship.mesh.position.set(0, 500, 80000); // 80k to be physically clear of star effects
+            this.ship.mesh.position.set(0, 500, 200000); // 200k to be absolutely sure we are out of the star
         };
 
         document.getElementById('start-btn').addEventListener('click', startGame);
