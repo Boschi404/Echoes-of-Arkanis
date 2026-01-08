@@ -226,18 +226,49 @@ class Game {
 
         const shipToPlanet = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
 
-        // 2. ORBITAL PREDICTION (Simplified for World Space compatibility)
-        // Calculating future world position for nested objects is expensive/complex.
-        // For now, we will lead the target slightly based on its estimated velocity if available.
-        // But simply targeting the current World Position fixes the "Fly to Coruscant" bug.
+        // 2. ORBITAL PREDICTION (World Space)
+        // We calculate the tangent velocity vector of the planet relative to its system center
+        // pData is already defined above
+        const planetVel = new THREE.Vector3(0, 0, 0);
 
-        if (this.input.isAutopilot) {
-            // Basic velocity leading if we wanted it, but for now strict tracking is safer
-            // to ensure we actually go to the planet.
-            // We can re-enable complex interception once basic navigation is confirmed.
-            predictedPos.copy(realTargetPos);
-        } else {
-            predictedPos.copy(realTargetPos);
+        if (this.input.isAutopilot && pData.orbitSpeed) {
+            // To calculate tangent, we need vector from Star to Planet
+            // Parent is the System Group (Star is at 0,0,0 of system group usually, or close)
+            // Let's use world positions of Parent vs Target
+            const parent = this.lockedTarget.parent;
+            if (parent) {
+                const parentPos = new THREE.Vector3();
+                parent.getWorldPosition(parentPos);
+
+                const radiusVector = new THREE.Vector3().subVectors(realTargetPos, parentPos);
+                const angle = t * pData.orbitSpeed; // Approximate current angle logic from update
+
+                // Velocity direction is cross product of up (0,1,0) and radius, scaled by speed
+                // V = Omega x R
+                const up = new THREE.Vector3(0, 1, 0);
+                planetVel.crossVectors(up, radiusVector).normalize();
+
+                // Speed is roughly: angularSpeed * dist
+                const speedVal = pData.orbitSpeed * pData.orbitDist;
+                planetVel.multiplyScalar(speedVal * 1000); // Scale factor for prediction magnitude
+            }
+
+            // Check for Head-on collision risk
+            const isHeadOn = planetVel.dot(shipToPlanet) < -50;
+
+            if (isHeadOn && shipPos.distanceTo(realTargetPos) < pData.radius * 8) {
+                // Shadow/Tail-gating: Aim behind
+                const tailOffset = planetVel.clone().normalize().multiplyScalar(-pData.radius * 4);
+                predictedPos.add(tailOffset);
+            } else {
+                // Lead the target
+                const dist = shipPos.distanceTo(realTargetPos);
+                const cruiseSpeed = 500; // Est average speed
+                const timeToTarget = dist / cruiseSpeed;
+                // Add displacement: V * t
+                const leadVec = planetVel.clone().multiplyScalar(timeToTarget * 0.05); // dampen prediction
+                predictedPos.add(leadVec);
+            }
         }
 
         const toTFull = new THREE.Vector3().subVectors(predictedPos, shipPos).normalize();
