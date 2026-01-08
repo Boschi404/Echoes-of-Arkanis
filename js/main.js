@@ -355,10 +355,9 @@ class Game {
                         this.ship.updateThruster(0, t);
                     }
                 } else {
-                    // PARKING STABILIZATION (Smooth transition)
-                    const damping = Math.max(0.85, 1 - (0.1 / (distToSurface + 1))); // Less aggressive than 0.75
-                    this.ship.velocity.multiplyScalar(damping);
-                    if (this.ship.velocity.length() < 0.2) this.ship.velocity.set(0, 0, 0);
+                    // PARKING STABILIZATION (Match Orbital Velocity)
+                    // Instead of stopping completely, we match the planet's speed to stay in sync
+                    this.ship.velocity.lerp(planetVel, 0.05);
                     this.ship.updateThruster(0, t);
 
                     // Gentle corrective drift
