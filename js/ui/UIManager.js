@@ -57,7 +57,7 @@ class UIManager {
         }
     }
 
-    updateDirectionIndicator(velocity, camera) {
+    updateDirectionIndicator(velocity, camera, shipPos) {
         let ind = document.getElementById('dir-indicator');
         if (!ind) {
             ind = document.createElement('div');
