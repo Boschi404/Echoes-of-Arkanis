@@ -31,7 +31,8 @@ class Game {
             document.getElementById('hud-container').style.display = 'grid';
             document.getElementById('crosshair').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
-            this.ship.mesh.position.set(0, 500, 40000); // Further out for grand view
+            document.getElementById('crosshair').style.display = 'block';
+            this.ship.mesh.position.set(0, 500, 60000); // 60k is safe distance from 10k radius star
         };
 
         document.getElementById('start-btn').addEventListener('click', startGame);
@@ -313,6 +314,8 @@ class Game {
             const dot = fwd.dot(toT);
 
             // Relative speed along the REAL target vector (current pos)
+            const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
+
             // Fix: Account for Planet's own velocity to handle head-on closing speed correctly
             // Closing Speed = (ShipVel - PlanetVel) dot (DirectionToTarget)
             const closingVelocity = this.ship.velocity.clone().sub(planetVel);
