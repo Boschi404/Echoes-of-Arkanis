@@ -30,7 +30,7 @@ class Game {
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('hud-container').style.display = 'grid';
             document.getElementById('crosshair').style.display = 'block';
-            this.ship.mesh.position.set(0, 500, 200000); // 200k to be absolutely sure we are out of the star
+            this.ship.mesh.position.set(0, 500, 150000); // 150k is safe and clear
         };
 
         document.getElementById('start-btn').addEventListener('click', startGame);
@@ -131,7 +131,9 @@ class Game {
         this.ship.mesh.position.add(this.ship.velocity);
 
         let inAtmo = false;
-        const shipWorldPos = new THREE.Vector3().setFromMatrixPosition(this.ship.mesh.matrixWorld);
+        this.ship.mesh.updateMatrixWorld();
+        const shipWorldPos = new THREE.Vector3();
+        this.ship.mesh.getWorldPosition(shipWorldPos);
 
         this.galaxy.celestialBodies.forEach(p => {
             const planetWorldPos = new THREE.Vector3().setFromMatrixPosition(p.matrixWorld);
@@ -157,7 +159,10 @@ class Game {
             // Solid Collision & Dynamic Parenting
             if (!pData.isGasGiant && d < pData.radius + 2) {
                 // Correct position to surface
-                const surfaceDir = new THREE.Vector3().subVectors(shipWorldPos, planetWorldPos).normalize();
+                let surfaceDir = new THREE.Vector3().subVectors(shipWorldPos, planetWorldPos);
+                if (surfaceDir.lengthSq() < 0.0001) surfaceDir.set(0, 1, 0); // Safety for center overlap
+                surfaceDir.normalize();
+
                 const targetPos = planetWorldPos.clone().addScaledVector(surfaceDir, pData.radius + 2);
 
                 // Zero out inward velocity
@@ -221,7 +226,9 @@ class Game {
         // Initialize prediction with current world pos
         let predictedPos = realTargetPos.clone();
 
-        const shipToPlanet = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
+        const shipToPlanetVec = new THREE.Vector3().subVectors(realTargetPos, shipPos);
+        const distPlanet = shipToPlanetVec.length();
+        const shipToPlanet = distPlanet < 0.0001 ? new THREE.Vector3(0, 0, -1) : shipToPlanetVec.divideScalar(distPlanet);
 
         // 2. ORBITAL PREDICTION (World Space)
         // We calculate the tangent velocity vector of the planet relative to its system center
@@ -268,12 +275,15 @@ class Game {
             }
         }
 
-        const toTFull = new THREE.Vector3().subVectors(predictedPos, shipPos).normalize();
+        const toTFullVec = new THREE.Vector3().subVectors(predictedPos, shipPos);
+        const distFull = toTFullVec.length();
+        const toTFull = distFull < 0.0001 ? new THREE.Vector3(0, 0, -1) : toTFullVec.divideScalar(distFull);
 
         // Jitter Filter: Higher smoothing for interception shifts
         if (!this.smoothedToT) this.smoothedToT = toTFull.clone();
         this.smoothedToT.lerp(toTFull, 0.05);
-        const toT = this.smoothedToT.clone().normalize();
+
+        const toT = this.smoothedToT.length() < 0.0001 ? new THREE.Vector3(0, 0, -1) : this.smoothedToT.clone().normalize();
 
         // 2. DIRECTIONAL STEERING (Align -Z to target)
         // setFromUnitVectors handles the shortest path between vectors stably
@@ -312,7 +322,9 @@ class Game {
             const dot = fwd.dot(toT);
 
             // Relative speed along the REAL target vector (current pos)
-            const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
+            const toRealTVec = new THREE.Vector3().subVectors(realTargetPos, shipPos);
+            const distRealT = toRealTVec.length();
+            const toRealT = distRealT < 0.0001 ? new THREE.Vector3(0, 0, -1) : toRealTVec.divideScalar(distRealT);
 
             // Fix: Account for Planet's own velocity to handle head-on closing speed correctly
             // Closing Speed = (ShipVel - PlanetVel) dot (DirectionToTarget)
