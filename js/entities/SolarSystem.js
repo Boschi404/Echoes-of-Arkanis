@@ -137,15 +137,15 @@ class GalaxyManager {
 
         // --- STAR ---
         // Using "Real-ish" scale: Stars are ~100x bigger than planets
-        const starGeo = new THREE.SphereGeometry(data.star.radius, 64, 64);
+        const starGeo = new THREE.SphereGeometry(data.star.radius, 128, 128);
         const starMat = new THREE.MeshBasicMaterial({ color: data.star.color });
         const star = new THREE.Mesh(starGeo, starMat);
         star.name = data.star.name;
 
         // Star Glow/Corona
         const corona = new THREE.Mesh(
-            new THREE.SphereGeometry(data.star.radius * 1.5, 32, 32),
-            new THREE.MeshBasicMaterial({ color: data.star.color, transparent: true, opacity: 0.15, side: THREE.BackSide })
+            new THREE.SphereGeometry(data.star.radius * 1.5, 64, 64),
+            new THREE.MeshBasicMaterial({ color: data.star.color, transparent: true, opacity: 0.08, side: THREE.BackSide })
         );
         star.add(corona);
 
@@ -233,7 +233,7 @@ class GalaxyManager {
 
     createCelestialBody(data, isMoon) {
         const biome = this.biomes[data.type] || this.biomes.rock;
-        const geo = new THREE.SphereGeometry(data.radius, 64, 64);
+        const geo = new THREE.SphereGeometry(data.radius, 128, 128);
         const mat = new THREE.MeshStandardMaterial({
             color: biome.color,
             roughness: biome.roughness,

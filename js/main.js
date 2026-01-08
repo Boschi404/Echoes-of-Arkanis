@@ -30,7 +30,8 @@ class Game {
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('hud-container').style.display = 'grid';
             document.getElementById('crosshair').style.display = 'block';
-            this.ship.mesh.position.set(0, 500, 15000); // Spawning closer to Coruscant (Radius 10k) to see the star immediately
+            document.getElementById('crosshair').style.display = 'block';
+            this.ship.mesh.position.set(0, 500, 40000); // Further out for grand view
         };
 
         document.getElementById('start-btn').addEventListener('click', startGame);
@@ -266,7 +267,7 @@ class Game {
                 const cruiseSpeed = 500; // Est average speed
                 const timeToTarget = dist / cruiseSpeed;
                 // Add displacement: V * t
-                const leadVec = planetVel.clone().multiplyScalar(timeToTarget * 0.05); // dampen prediction
+                const leadVec = planetVel.clone().multiplyScalar(timeToTarget * 0.01); // Minimal prediction to prevent jitter
                 predictedPos.add(leadVec);
             }
         }
@@ -282,10 +283,10 @@ class Game {
         // setFromUnitVectors handles the shortest path between vectors stably
         const qTarget = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), toT);
 
-        // Lateral Damping (Kill drift) - REDUCED for more "clumsy" 0-G feel
+        // Lateral Damping (Kill drift)
         if (currentSpeed > 2) {
             const lateralVel = currentVel.clone().addScaledVector(toT, -currentVel.dot(toT));
-            this.ship.velocity.addScaledVector(lateralVel, -0.05); // Stronger drift correction
+            this.ship.velocity.addScaledVector(lateralVel, -0.01); // Smoother drift correction
         }
 
         // BANK INTO TURN
@@ -318,10 +319,10 @@ class Game {
             const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
             const relativeSpeed = this.ship.velocity.dot(toRealT);
 
-            // CONSTANTS - STRONGER BRAKES
-            const maxCruiseSpeed = 350;
-            const brakeAcc = 0.8; // Much stronger brakes
-            const safetyBuffer = 3000; // More space to stop
+            // CONSTANTS - SMOOTHER BRAKES
+            const maxCruiseSpeed = 400;
+            const brakeAcc = 0.15; // Restoration of softer braking
+            const safetyBuffer = 2000;
 
             // Calculate braking distance needed to reach speed 0 at targetParkDist
             const brakingDistanceNeeded = (relativeSpeed * relativeSpeed) / (2 * brakeAcc);
