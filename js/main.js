@@ -354,15 +354,31 @@ class Game {
         this.mapState.distance = Math.max(50000, Math.min(2000000, this.mapState.distance));
 
         // Pan/Rotate logic
+        // Pan/Rotate logic
+        if (!this.lastMouse) this.lastMouse = { x: 0, y: 0 };
+        if (typeof this.isDraggingMap === 'undefined') this.isDraggingMap = false;
+
+        // Pan/Rotate logic with Mouse Drag
         if (this.input.mouse.clicked) {
-            // Very simple rotation for now based on mouse movement delta would be complex without tracking prev mouse
-            // Let's use keys for rotation to be safer in this step
-            if (this.input.keys['ArrowLeft']) this.mapState.theta -= 0.05;
-            if (this.input.keys['ArrowRight']) this.mapState.theta += 0.05;
-            if (this.input.keys['ArrowUp']) this.mapState.phi -= 0.05;
-            if (this.input.keys['ArrowDown']) this.mapState.phi += 0.05;
-            this.mapState.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, this.mapState.phi));
+            const dx = this.input.mouse.x - this.lastMouse.x;
+            const dy = this.input.mouse.y - this.lastMouse.y;
+
+            // Threshold to consider it a drag
+            if (this.isDraggingMap || Math.abs(dx) > 0.002 || Math.abs(dy) > 0.002) {
+                this.isDraggingMap = true;
+                this.mapState.theta -= dx * 1.5;
+                this.mapState.phi += dy * 1.5;
+                this.mapState.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, this.mapState.phi));
+            }
+        } else {
+            this.isDraggingMap = false;
         }
+        this.lastMouse.x = this.input.mouse.x;
+        this.lastMouse.y = this.input.mouse.y;
+
+        // Keys fallback
+        if (this.input.keys['ArrowLeft']) this.mapState.theta -= 0.05;
+        if (this.input.keys['ArrowRight']) this.mapState.theta += 0.05;
 
         // 2. CAMERA POSITIONING (Spherical Coordinates)
         const x = this.mapState.distance * Math.sin(this.mapState.phi) * Math.cos(this.mapState.theta);
@@ -391,7 +407,7 @@ class Game {
 
             this.ui.showPlanetTooltip(planet, this.input.mouse);
 
-            if (this.input.mouse.clicked) {
+            if (this.input.mouse.clicked && !this.isDraggingMap) {
                 this.lockedTarget = planet;
                 this.input.isTracking = true;
                 this.input.isMapOpen = false;

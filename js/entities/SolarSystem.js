@@ -87,12 +87,16 @@ class GalaxyManager {
         const canvas = document.createElement('canvas');
         canvas.width = 64; canvas.height = 64;
         const ctx = canvas.getContext('2d');
-        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        grad.addColorStop(0, 'rgba(0, 243, 255, 1)');
-        grad.addColorStop(0.3, 'rgba(0, 243, 255, 0.5)');
-        grad.addColorStop(1, 'rgba(0, 243, 255, 0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 64, 64);
+
+        // Hollow Ring Glow
+        ctx.beginPath();
+        ctx.arc(32, 32, 20, 0, Math.PI * 2);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#00F3FF'; // Cyan
+        ctx.shadowColor = '#00F3FF';
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+
         return new THREE.CanvasTexture(canvas);
     }
 
