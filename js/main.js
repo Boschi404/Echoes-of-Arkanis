@@ -168,18 +168,11 @@ class Game {
                 }
 
                 // Dynamic Parenting Logic: 
-                // We keep the ship in the global scene but update its position 
-                // to follow the planet's rotation by applying the same delta
-                const planetMatrix = p.matrixWorld.clone();
-                if (!this.lastPlanetMatrix || this.currentParentPlanet !== p) {
-                    this.lastPlanetMatrix = planetMatrix;
-                    this.currentParentPlanet = p;
-                } else {
-                    const invLast = this.lastPlanetMatrix.clone().invert();
-                    const relativeMove = planetMatrix.multiply(invLast);
-                    this.ship.mesh.position.applyMatrix4(relativeMove);
-                    this.lastPlanetMatrix = planetMatrix.clone();
-                }
+                // Simplify: Just push out of surface. Complex matrix parenting causes teleportation bugs.
+                this.ship.mesh.position.copy(targetPos);
+
+                // Add friction/drag if touching surface
+                this.ship.velocity.multiplyScalar(0.9);
             } else if (this.currentParentPlanet === p) {
                 this.currentParentPlanet = null;
                 this.lastPlanetMatrix = null;
@@ -204,9 +197,13 @@ class Game {
             this.handleStandardMode(t, currentSpeed);
         }
 
-        this.ui.updateHUD(currentSpeed, this.ship.mesh.position.length(), this.atmoStatus);
+        this.ui.updateHUD(currentSpeed, this.ship.mesh.position.length(), this.atmoStatus, this.ship.mesh.position);
         this.ship.updateCockpit(currentSpeed, this.lockedTarget);
         this.environment.updateSpeedLines(this.ship.mesh, currentSpeed);
+
+        // G-Force / Direction Indicator
+        // We need to pass the ship position to project it correctly from the camera view
+        this.ui.updateDirectionIndicator(this.ship.velocity, this.sceneManager.camera, this.ship.mesh.position);
     }
 
     handleAutopilot(t, fwd) {
@@ -316,8 +313,10 @@ class Game {
             const dot = fwd.dot(toT);
 
             // Relative speed along the REAL target vector (current pos)
-            const toRealT = new THREE.Vector3().subVectors(realTargetPos, shipPos).normalize();
-            const relativeSpeed = this.ship.velocity.dot(toRealT);
+            // Fix: Account for Planet's own velocity to handle head-on closing speed correctly
+            // Closing Speed = (ShipVel - PlanetVel) dot (DirectionToTarget)
+            const closingVelocity = this.ship.velocity.clone().sub(planetVel);
+            const relativeSpeed = closingVelocity.dot(toRealT);
 
             // CONSTANTS - EARLY & STRONG BRAKES
             const maxCruiseSpeed = 300; // Slower cruise for control
@@ -460,6 +459,7 @@ class Game {
 
     handleStandardMode(t, currentSpeed) {
         document.getElementById('map-label').style.display = 'none';
+        this.ui.hidePlanetTooltip();
 
         // Fix: Hide map pointer when not in map mode
         const mapPointer = document.getElementById('map-pointer');
