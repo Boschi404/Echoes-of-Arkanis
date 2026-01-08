@@ -117,42 +117,56 @@ class ProceduralTextures {
         const imageData = ctx.getImageData(0, 0, size, size);
         const data = imageData.data;
 
-        // Generate procedural surface details
+        // Generate procedural surface details with more octaves and emphasis on contrast
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
                 const i = (y * size + x) * 4;
 
-                // Multi-octave noise for realistic terrain
+                // Multi-octave noise for realistic terrain (more detail)
                 let noise = 0;
-                noise += this.noise2D(x * 0.01, y * 0.01, 1) * 0.5;
-                noise += this.noise2D(x * 0.02, y * 0.02, 2) * 0.25;
-                noise += this.noise2D(x * 0.04, y * 0.04, 3) * 0.125;
-                noise += this.noise2D(x * 0.08, y * 0.08, 4) * 0.0625;
+                noise += this.noise2D(x * 0.005, y * 0.005, 1) * 0.45;
+                noise += this.noise2D(x * 0.01, y * 0.01, 2) * 0.25;
+                noise += this.noise2D(x * 0.02, y * 0.02, 3) * 0.15;
+                noise += this.noise2D(x * 0.04, y * 0.04, 4) * 0.08;
+                noise += this.noise2D(x * 0.08, y * 0.08, 5) * 0.04;
 
-                // Apply noise to color
-                const factor = noise * 0.5 + 0.5; // Normalize to 0-1
+                // High-frequency detail for contrast
+                const hiDetail = this.noise2D(x * 0.25, y * 0.25, 99) * 0.6;
 
-                data[i] = colorScheme.base[0] + (colorScheme.accent[0] - colorScheme.base[0]) * factor;
-                data[i + 1] = colorScheme.base[1] + (colorScheme.accent[1] - colorScheme.base[1]) * factor;
-                data[i + 2] = colorScheme.base[2] + (colorScheme.accent[2] - colorScheme.base[2]) * factor;
+                // Combine and apply contrast curve
+                let factor = noise * 0.5 + 0.5;
+                factor = Math.pow(factor * (1 + hiDetail * 0.18), 0.85); // small boost to highlights
 
-                // Add special features based on type
+                // Apply base->accent interpolation with increased contrast
+                const contrast = 1.25;
+                const lerpChannel = (base, accent) => {
+                    const v = base + (accent - base) * factor;
+                    // Apply contrast around 128 midpoint
+                    const centered = (v - 128) / 128;
+                    return Math.max(0, Math.min(255, 128 + centered * 128 * contrast + hiDetail * 22));
+                };
+
+                data[i] = lerpChannel(colorScheme.base[0], colorScheme.accent[0]);
+                data[i + 1] = lerpChannel(colorScheme.base[1], colorScheme.accent[1]);
+                data[i + 2] = lerpChannel(colorScheme.base[2], colorScheme.accent[2]);
+
+                // Add special features based on type with stronger contrast
                 if (type === 'city' && noise > 0.6) {
                     // City lights
-                    data[i] += 20;
-                    data[i + 1] += 20;
-                    data[i + 2] += 30;
-                } else if (type === 'volcanic' && noise > 0.7) {
-                    // Lava veins
+                    data[i] = Math.min(255, data[i] + 40);
+                    data[i + 1] = Math.min(255, data[i + 1] + 40);
+                    data[i + 2] = Math.min(255, data[i + 2] + 60);
+                } else if (type === 'volcanic' && noise > 0.65) {
+                    // Brighter lava veins with glow
                     data[i] = colorScheme.detail[0];
-                    data[i + 1] = colorScheme.detail[1];
-                    data[i + 2] = colorScheme.detail[2];
+                    data[i + 1] = Math.min(255, data[i + 1] + 20);
+                    data[i + 2] = Math.min(255, data[i + 2] + 10);
                 } else if (type === 'gas_giant') {
-                    // Bands
-                    const band = Math.sin(y * 0.05 + noise * 2) * 0.3;
-                    data[i] += band * 40;
-                    data[i + 1] += band * 30;
-                    data[i + 2] += band * 20;
+                    // Stronger bands with turbulence
+                    const band = Math.sin(y * 0.06 + noise * 2) * 0.4 + hiDetail * 0.25;
+                    data[i] = Math.min(255, data[i] + band * 60);
+                    data[i + 1] = Math.min(255, data[i + 1] + band * 40);
+                    data[i + 2] = Math.min(255, data[i + 2] + band * 20);
                 }
             }
         }
@@ -160,8 +174,46 @@ class ProceduralTextures {
         ctx.putImageData(imageData, 0, 0);
 
         const texture = new THREE.CanvasTexture(canvas);
+        texture.anisotropy = 4;
+        texture.needsUpdate = true;
+
         this.textureCache.set(key, texture);
         return texture;
+    }
+
+    // Generate a bump/height map to add surface detail and contrast via bump mapping
+    createPlanetBump(size = 512, type = 'desert') {
+        const key = `planet_bump_${size}_${type}`;
+        if (this.textureCache.has(key)) return this.textureCache.get(key);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, size, size);
+        const data = imageData.data;
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const i = (y * size + x) * 4;
+                // Higher frequency noise map for bump
+                let n = 0;
+                n += Math.abs(this.noise2D(x * 0.02, y * 0.02, 7)) * 0.5;
+                n += Math.abs(this.noise2D(x * 0.06, y * 0.06, 12)) * 0.35;
+                n += Math.abs(this.noise2D(x * 0.15, y * 0.15, 21)) * 0.15;
+                // Normalize and remap to 0-255 with slight contrast
+                const v = Math.max(0, Math.min(1, Math.pow(n, 0.9)));
+                const val = Math.round(v * 255);
+                data[i] = data[i + 1] = data[i + 2] = val;
+                data[i + 3] = 255;
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        const bumpTex = new THREE.CanvasTexture(canvas);
+        bumpTex.anisotropy = 4;
+        bumpTex.needsUpdate = true;
+        this.textureCache.set(key, bumpTex);
+        return bumpTex;
     }
 }
 

@@ -20,7 +20,7 @@
     </div>
 
     <div id="ui-layer">
-        <div class="glass-panel menu-bento">
+        <div class="glass-panel menu-bento bento-holo">
             <div class="scanlines"></div>
             <div class="menu-main-title">
                 <div class="menu-subtitle">SISTEMA DI NAVIGAZIONE INTERSTELLARE</div>
@@ -70,7 +70,7 @@
     <!-- HUD BENTO -->
     <div id="hud-container">
         <!-- LEFT: PHYSICS -->
-        <div class="glass-panel hud-module">
+        <div class="glass-panel hud-module bento-holo">
             <div class="scanlines"></div>
             <div class="module-header">
                 <span>DATI CINETICI</span>
@@ -92,8 +92,8 @@
             </div>
         </div>
 
-        <!-- RIGHT: TARGETING -->
-        <div class="glass-panel hud-module" id="target-display">
+        <!-- RIGHT: TARGETING (moved visually to top-right by CSS) -->
+        <div class="glass-panel hud-module bento-holo" id="target-display">
             <div class="scanlines"></div>
             <div class="module-header">
                 <span>ANALISI OBIETTIVO</span>
@@ -101,18 +101,25 @@
             </div>
             <div id="target-overlay-content">
                 <div class="data-value" id="t-name" style="font-size: 1.1rem; color: var(--cyan);">SEARCHING...</div>
+                <div class="target-info-line" id="t-system">SISTEMA: ---</div>
+                <div class="target-info-line" id="t-size">DIMENSIONE: ---</div>
                 <div class="target-info-line" id="t-dist">DISTANZA: ---</div>
+                <div class="target-info-line" id="t-speed">VEL. PIANETA: ---</div>
                 <div class="target-info-line" id="t-info" style="font-size: 0.6rem; opacity: 0.6;">IN ATTESA DI
                     SCANSIONE...</div>
                 <div class="ap-indicator" id="ap-status">PILOTA AUTOMATICO ATTIVO</div>
             </div>
         </div>
 
+        <!-- Ship State (top-center status) -->
+        <div id="ship-state">STATUS: MANUAL</div>
+        <div id="land-hint" style="display:none;">PREMI <b>P</b> PER ATTERRARE</div>
+
         <!-- BOTTOM: SYSTEM STATUS -->
-        <div class="glass-panel hud-module" style="grid-column: 1 / span 3; padding: 10px 25px; margin-top: -10px;">
+        <div class="glass-panel hud-module bento-holo" style="grid-column: 1 / span 3; padding: 10px 25px; margin-top: -10px;">
             <div class="scanlines"></div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem;">
-                <div id="alt" style="letter-spacing: 2px; color: var(--cyan);">DISTANZA SOLE: 0 m</div>
+                <div id="alt" style="letter-spacing: 2px; color: var(--cyan);">RIFERIMENTO: ---</div>
                 <div style="color: #445; letter-spacing: 1px;">
                     [SHIFT] SPINTA // [L] TRACKING // [O] PILOTA AUTO // [M] MAPPA // [V] VISUALE
                 </div>
@@ -122,12 +129,16 @@
     </div>
 
     <div id="crosshair">
-        <svg viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="1" stroke-dasharray="5,5" />
-            <path d="M50 5 L50 15 M50 85 L50 95 M5 50 L15 50 M85 50 L95 50" stroke="var(--cyan)" stroke-width="2" />
-            <rect x="48" y="48" width="4" height="4" fill="var(--accent)" />
-        </svg>
+        <div class="reticle-ring"></div>
+        <div class="reticle-dot"></div>
     </div>
+
+    <div id="aim-label">PLANET</div>
+
+    <!-- Proximity shadow overlay used to visually indicate how close we are to a body -->
+    <div id="proximity-shadow" aria-hidden="true"></div>
+
+    <div class="holo-frame"></div>
 
     <div id="map-label">STARCHART PROJECTION</div>
     <div class="hint" id="game-hint" style="display:none;"></div>

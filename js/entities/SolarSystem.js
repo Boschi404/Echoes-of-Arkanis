@@ -197,25 +197,31 @@ class GalaxyManager {
                     const moon = this.createCelestialBody(mData, true);
                     moon.userData.parentBody = planet; // Orbits the planet
                     moon.userData.orbitSpeed = this.rng.range(0.001, 0.003); // Faster moon orbits
-                    moon.userData.orbitDist = mData.dist;
+
+                    // Ensure moon orbit distance accounts for visual scales so it doesn't intersect the planet
+                    const gap = Math.max(10, Math.floor(planet.userData.radius * 0.08)); // clearance proportional to planet size
+                    const moonVisualRadius = moon.userData.radius || (mData.radius * ((mData.type === 'gas_giant') ? 4 : 8));
+
+                    // Compute a safe orbital distance: at least planet radius + moon radius + gap,
+                    // and respect any configured mData.dist as an additional offset
+                    const baseDist = (typeof mData.dist === 'number') ? mData.dist : 0;
+                    const minSafe = planet.userData.radius + moonVisualRadius + gap;
+                    const moonOrbitDist = Math.max(baseDist + planet.userData.radius + gap, minSafe, Math.floor(planet.userData.radius * 1.5) + gap);
+
+                    moon.userData.orbitDist = moonOrbitDist;
                     moon.userData.angle = this.rng.range(0, Math.PI * 2);
 
-                    // Add moon to the SYSTEM group, but mathematically it orbits the planet
-                    // We render it as a child of the Planet mesh? 
-                    // No, for cleaner physics/world transform, let's keep it in system group but update relative to planet
-                    // Actually, parenting to planet makes logic easier for "sticking".
-                    // Let's parent to the Planet Mesh.
-
+                    // Position the moon relative to the planet center using the computed orbit distance
                     moon.position.set(
-                        Math.cos(moon.userData.angle) * mData.dist,
+                        Math.cos(moon.userData.angle) * moonOrbitDist,
                         0,
-                        Math.sin(moon.userData.angle) * mData.dist
+                        Math.sin(moon.userData.angle) * moonOrbitDist
                     );
                     planet.add(moon);
 
-                    // ADD ORBIT LINE FOR MOON
-                    if (mData.dist > 0) {
-                        const moonOrbit = this.createOrbitLine(mData.dist, 0xaaaaaa);
+                    // ADD ORBIT LINE FOR MOON (use adjusted orbit distance)
+                    if (moonOrbitDist > 0) {
+                        const moonOrbit = this.createOrbitLine(moonOrbitDist, 0xaaaaaa);
                         planet.add(moonOrbit);
                     }
 
@@ -235,19 +241,25 @@ class GalaxyManager {
 
     createCelestialBody(data, isMoon) {
         const biome = this.biomes[data.type] || this.biomes.rock;
-        const geo = new THREE.SphereGeometry(data.radius, 128, 128);
+        // Visual scale: increase planet sizes to be more discernible and closer to real solar proportions
+        const visualScale = (data.type === 'gas_giant') ? 4 : 8;
+        const visualRadius = data.radius * visualScale;
+        const geo = new THREE.SphereGeometry(visualRadius, 128, 128);
 
         // Use procedural texture
         const planetTexture = this.textureGen.createPlanetTexture(1024, data.type);
+        const bump = this.textureGen.createPlanetBump(1024, data.type);
 
         const mat = new THREE.MeshStandardMaterial({
             map: planetTexture,
-            roughness: biome.roughness,
-            metalness: biome.metalness,
+            bumpMap: bump,
+            bumpScale: data.type === 'gas_giant' ? 0.02 : 0.8,
+            roughness: Math.max(0.08, biome.roughness * 0.9),
+            metalness: Math.min(0.8, biome.metalness + 0.05),
             emissive: biome.emissive,
             emissiveIntensity: 0.5,
             transparent: data.type === 'gas_giant',
-            opacity: data.type === 'gas_giant' ? 0.8 : 1
+            opacity: data.type === 'gas_giant' ? 0.85 : 1
         });
 
         const mesh = new THREE.Mesh(geo, mat);
@@ -255,25 +267,29 @@ class GalaxyManager {
 
         // Physics & Gameplay Data
         mesh.userData = {
-            radius: data.radius,
+            radius: visualRadius,
             type: data.type,
-            soi: data.radius * 4,
-            gravity: data.radius * 0.002,
+            soi: visualRadius * 4,
+            gravity: visualRadius * 0.002,
             isGasGiant: data.type === 'gas_giant',
             isMoon: isMoon,
-            marker: this.createMapMarker(data.radius) // Function below
+            marker: this.createMapMarker(visualRadius) // Function below
         };
 
-        // Atmosphere visual
-        if (!mesh.userData.isGasGiant && data.radius > 50) {
-            const atmoGeo = new THREE.SphereGeometry(data.radius * 1.03, 32, 32);
+        // Atmosphere visual (bigger opacity from outside, more transparent from inside)
+        if (!mesh.userData.isGasGiant && visualRadius > 50) {
+            const atmoGeo = new THREE.SphereGeometry(visualRadius * 1.03, 32, 32);
             const atmoMat = new THREE.MeshBasicMaterial({
                 color: biome.color,
                 transparent: true,
-                opacity: 0.12,
-                side: THREE.BackSide
+                opacity: 0.35,
+                side: THREE.DoubleSide,
+                depthWrite: false
             });
-            mesh.add(new THREE.Mesh(atmoGeo, atmoMat));
+            const atmoMesh = new THREE.Mesh(atmoGeo, atmoMat);
+            atmoMesh.name = mesh.name + '_atmo';
+            mesh.add(atmoMesh);
+            mesh.userData.atmoMesh = atmoMesh;
         }
 
         // Attach Marker
@@ -318,16 +334,7 @@ class GalaxyManager {
             // Stars don't move (relative to system)
         });
 
-        // Planets orbit stars
-        // Since we pushed all bodies to this.planets, we need to distinguish
-        // For physics parenting, satellites are children of planets in ThreeJS graph.
-        // Planets are children of system group.
-
-        // We only need to animate the "Planets" (children of System) manually for orbits.
-        // Moons (children of Planets) will move with planets automatically, 
-        // but we need to rotate them around the planet.
-
-        // We updates all celestial bodies
+        // We update all celestial bodies
         this.celestialBodies.forEach(p => {
             // Rotate on axis
             p.rotation.y += 0.0005;
@@ -358,6 +365,23 @@ class GalaxyManager {
                         Math.sin(p.userData.angle) * p.userData.orbitDist
                     );
                 }
+            }
+
+            // Compute world position and per-frame velocity, avoiding spikes on first frame
+            const worldPos = new THREE.Vector3();
+            p.getWorldPosition(worldPos);
+
+            if (!p.userData.prevWorldPos) {
+                // initialize prev position to current to avoid large initial velocity spikes
+                p.userData.prevWorldPos = worldPos.clone();
+                p.userData.velocity = new THREE.Vector3(0,0,0);
+            } else {
+                const vel = worldPos.clone().sub(p.userData.prevWorldPos);
+                // Safety clamp to avoid extreme velocities that could destabilize the ship
+                const maxVelFrame = 1000; // units/frame
+                if (vel.length() > maxVelFrame) vel.setLength(maxVelFrame);
+                p.userData.velocity = vel;
+                p.userData.prevWorldPos.copy(worldPos);
             }
         });
     }
