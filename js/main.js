@@ -32,7 +32,8 @@ class Game {
             document.getElementById('crosshair').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
             document.getElementById('crosshair').style.display = 'block';
-            this.ship.mesh.position.set(0, 500, 60000); // 60k is safe distance from 10k radius star
+            document.getElementById('crosshair').style.display = 'block';
+            this.ship.mesh.position.set(0, 500, 80000); // 80k to be physically clear of star effects
         };
 
         document.getElementById('start-btn').addEventListener('click', startGame);
@@ -146,8 +147,8 @@ class Game {
                 const gravityDir = new THREE.Vector3().subVectors(planetWorldPos, shipWorldPos).normalize();
                 this.ship.velocity.addScaledVector(gravityDir, gravityStrength);
 
-                // Atmosphere effect if not gas giant
-                if (!pData.isGasGiant && d < pData.radius * 2) {
+                // Atmosphere effect (Planets/Moons only, not Stars)
+                if (pData.type !== 'star' && !pData.isGasGiant && d < pData.radius * 2) {
                     inAtmo = true;
                     this.atmoStatus = p.name;
                     // Sky Color
