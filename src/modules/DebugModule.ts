@@ -5,9 +5,9 @@ import { IModule } from '../interfaces/IModule';
  * Can be toggled on/off for development builds.
  */
 export class DebugModule implements IModule {
-    private fpsCounter: FPSCounter;
-    private performanceMonitor: PerformanceMonitor;
-    private debugUI: DebugUI;
+    private fpsCounter!: FPSCounter;
+    private performanceMonitor!: PerformanceMonitor;
+    private debugUI!: DebugUI;
 
     // Debug flags
     private showFPS: boolean = false;
