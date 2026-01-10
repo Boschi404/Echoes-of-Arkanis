@@ -6,9 +6,9 @@ import { IModule } from '../interfaces/IModule';
  * Keeps Three.js strictly isolated within this module.
  */
 export class RenderingModule implements IModule {
-    public scene: THREE.Scene;
-    public camera: THREE.PerspectiveCamera;
-    public renderer: THREE.WebGLRenderer;
+    public scene!: THREE.Scene;
+    public camera!: THREE.PerspectiveCamera;
+    public renderer!: THREE.WebGLRenderer;
 
     init(): void {
         // Create scene

@@ -1,9 +1,9 @@
-import { Engine } from './core/Engine';
+import { Engine } from '../engine/core/Engine';
 import { RenderingModule } from './modules/RenderingModule';
-import { WorldManager } from './modules/WorldManager';
+import { WorldManager } from '../engine/world/WorldManager';
 import { PlayerStateMachine } from './modules/PlayerStateMachine';
 import { LODManager } from './modules/LODManager';
-import { InputManager } from './modules/InputManager';
+import { InputManager } from '../engine/input/InputManager';
 import { DebugModule } from './modules/DebugModule';
 
 /**
@@ -16,19 +16,19 @@ function main(): void {
 
     // Create modules
     const renderingModule = new RenderingModule();
-    const worldManager = new WorldManager(renderingModule.scene);
+    const worldManager = new WorldManager();
     const playerStateMachine = new PlayerStateMachine(renderingModule.camera, renderingModule.scene);
     const lodManager = new LODManager(renderingModule.camera, worldManager);
     const inputManager = new InputManager();
     const debugModule = new DebugModule();
 
-    // Add modules to the engine
-    engine.addModule(renderingModule);
-    engine.addModule(worldManager);
-    engine.addModule(playerStateMachine);
-    engine.addModule(lodManager);
-    engine.addModule(inputManager);
-    engine.addModule(debugModule);
+    // Register modules to the engine
+    engine.registerModule(renderingModule);
+    engine.registerModule(worldManager);
+    engine.registerModule(playerStateMachine);
+    engine.registerModule(lodManager);
+    engine.registerModule(inputManager);
+    engine.registerModule(debugModule);
 
     // Initialize the engine and all modules
     engine.init();
