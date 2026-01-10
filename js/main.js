@@ -297,7 +297,6 @@ class Game {
 
         // Pass locked target so HUD can show reference distance/name instead of assuming a single star
         // Use world position for UI and proximity updates (robust when ship is parented)
-        const shipWorldPos = new THREE.Vector3();
         this.ship.mesh.getWorldPosition(shipWorldPos);
         this.ui.updateHUD(currentSpeed, this.lockedTarget, this.atmoStatus, shipWorldPos);
         // Update proximity shadow each frame (visual aid for distance to locked target)
@@ -786,7 +785,7 @@ class Game {
             // Compute local quaternion relative to parent
             const parentWorldQuat = new THREE.Quaternion();
             parent.getWorldQuaternion(parentWorldQuat);
-            const localQuat = parentWorldQuat.clone().inverse().multiply(shipWorldQuat);
+            const localQuat = parentWorldQuat.clone().invert().multiply(shipWorldQuat);
 
             // Reparent ship to planet
             try {

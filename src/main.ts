@@ -16,7 +16,7 @@ function main(): void {
 
     // Create modules
     const renderingModule = new RenderingModule();
-    const worldManager = new WorldManager();
+    const worldManager = new WorldManager(renderingModule.scene);
     const playerStateMachine = new PlayerStateMachine(renderingModule.camera, renderingModule.scene);
     const lodManager = new LODManager(renderingModule.camera, worldManager);
     const inputManager = new InputManager();

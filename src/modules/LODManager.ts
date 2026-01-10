@@ -1,30 +1,43 @@
 import * as THREE from 'three';
 import { IModule } from '../interfaces/IModule';
-import { WorldManager, CelestialBody } from './WorldManager';
+import { WorldManager } from './WorldManager';
 
 /**
- * LOD Manager provides scaffolding for macro LOD (systems/galaxies) and chunk LOD (planets).
- * Allows smooth transitions between detail levels.
+ * LOD Manager provides scaffolding for Level of Detail systems.
+ * Handles macro LOD for systems/galaxies and chunk LOD for planets.
+ * Supports smooth transitions between detail levels.
  */
+export enum LODLevel {
+    HIGH_DETAIL = 'high',
+    MEDIUM_DETAIL = 'medium',
+    LOW_DETAIL = 'low',
+    CULLED = 'culled'
+}
+
+/**
+ * LOD thresholds for different scales.
+ */
+export class LODThresholds {
+    // Macro LOD (galaxies, star systems)
+    static readonly MACRO_HIGH = 100000;    // Within 100k units: full detail
+    static readonly MACRO_MEDIUM = 500000;  // 100k-500k: medium detail
+    static readonly MACRO_LOW = 2000000;    // 500k-2M: low detail
+    // Beyond 2M: culled
+
+    // Chunk LOD (planets, terrain)
+    static readonly CHUNK_HIGH = 1000;      // Within 1k units: full geometry
+    static readonly CHUNK_MEDIUM = 5000;    // 1k-5k: medium detail
+    static readonly CHUNK_LOW = 20000;      // 5k-20k: low detail
+    // Beyond 20k: culled
+}
+
 export class LODManager implements IModule {
     private camera: THREE.Camera;
     private worldManager: WorldManager;
-    private lodLevels: Map<CelestialBody, LODLevel> = new Map();
 
-    // LOD thresholds (distances in world units)
-    private readonly SYSTEM_LOD_THRESHOLDS = {
-        HIGH_DETAIL: 10000,    // Full geometry, all effects
-        MEDIUM_DETAIL: 50000,  // Simplified geometry
-        LOW_DETAIL: 200000,    // Billboard or low-poly
-        CULLED: 1000000        // Not rendered
-    };
-
-    private readonly PLANET_LOD_THRESHOLDS = {
-        FULL_GEOMETRY: 1000,   // Full terrain chunks
-        LOW_POLY: 5000,        // Simplified mesh
-        BILLBOARD: 20000,       // 2D sprite
-        CULLED: 100000         // Not rendered
-    };
+    // LOD tracking
+    private macroObjects: Map<THREE.Object3D, LODLevel> = new Map();
+    private chunkObjects: Map<THREE.Object3D, LODLevel> = new Map();
 
     constructor(camera: THREE.Camera, worldManager: WorldManager) {
         this.camera = camera;
@@ -32,135 +45,158 @@ export class LODManager implements IModule {
     }
 
     init(): void {
-        // Initialize LOD levels for all celestial bodies
-        const bodies = this.worldManager.getCelestialBodies();
-        for (const body of bodies) {
-            this.lodLevels.set(body, LODLevel.HIGH_DETAIL);
-            this.updateLODMeshes(body, LODLevel.HIGH_DETAIL);
-        }
+        console.log('Initializing LOD Manager...');
+
+        // TODO: Register world objects for LOD management
+        // - Scan world manager for galaxies, systems, planets
+        // - Set up initial LOD levels
+        // - Create LOD representations for different levels
+
+        console.log('LOD Manager initialized');
     }
 
     update(dt: number): void {
-        const cameraPosition = new THREE.Vector3();
-        this.camera.getWorldPosition(cameraPosition);
+        this.updateMacroLOD();
+        this.updateChunkLOD();
 
-        // Update LOD for all celestial bodies
-        const bodies = this.worldManager.getCelestialBodies();
-        for (const body of bodies) {
-            if (!body.mesh) continue;
-
-            const distance = cameraPosition.distanceTo(body.mesh.getWorldPosition(new THREE.Vector3()));
-
-            const newLOD = this.calculateLOD(body, distance);
-            const currentLOD = this.lodLevels.get(body);
-
-            if (newLOD !== currentLOD) {
-                this.transitionLOD(body, currentLOD!, newLOD);
-                this.lodLevels.set(body, newLOD);
-            }
-        }
-
-        // TODO: Implement smooth transitions
-        // - Interpolate between LOD levels over time
-        // - Fade in/out effects during transitions
-        // - Asynchronous loading of higher detail meshes
+        // TODO: Implement smooth LOD transitions
+        // - Interpolate between detail levels
+        // - Fade in/out objects
+        // - Morph geometries
     }
 
     dispose(): void {
-        this.lodLevels.clear();
+        this.macroObjects.clear();
+        this.chunkObjects.clear();
+        console.log('LOD Manager disposed');
     }
 
     /**
-     * Calculate appropriate LOD level based on distance and body type.
+     * Register an object for macro LOD management.
      */
-    private calculateLOD(body: CelestialBody, distance: number): LODLevel {
-        switch (body.type) {
-            case 'star':
-            case 'planet':
-                if (distance < this.SYSTEM_LOD_THRESHOLDS.HIGH_DETAIL) return LODLevel.HIGH_DETAIL;
-                if (distance < this.SYSTEM_LOD_THRESHOLDS.MEDIUM_DETAIL) return LODLevel.MEDIUM_DETAIL;
-                if (distance < this.SYSTEM_LOD_THRESHOLDS.LOW_DETAIL) return LODLevel.LOW_DETAIL;
-                if (distance < this.SYSTEM_LOD_THRESHOLDS.CULLED) return LODLevel.BILLBOARD;
-                return LODLevel.CULLED;
-
-            case 'moon':
-            case 'asteroid':
-                if (distance < this.PLANET_LOD_THRESHOLDS.FULL_GEOMETRY) return LODLevel.HIGH_DETAIL;
-                if (distance < this.PLANET_LOD_THRESHOLDS.LOW_POLY) return LODLevel.MEDIUM_DETAIL;
-                if (distance < this.PLANET_LOD_THRESHOLDS.BILLBOARD) return LODLevel.LOW_DETAIL;
-                if (distance < this.PLANET_LOD_THRESHOLDS.CULLED) return LODLevel.BILLBOARD;
-                return LODLevel.CULLED;
-
-            default:
-                return LODLevel.MEDIUM_DETAIL;
-        }
+    registerMacroObject(object: THREE.Object3D): void {
+        this.macroObjects.set(object, LODLevel.HIGH_DETAIL);
     }
 
     /**
-     * Transition a celestial body to a new LOD level.
+     * Register an object for chunk LOD management.
      */
-    private transitionLOD(body: CelestialBody, fromLOD: LODLevel, toLOD: LODLevel): void {
-        // TODO: Implement smooth transitions
-        // For now, just switch immediately
-        this.updateLODMeshes(body, toLOD);
+    registerChunkObject(object: THREE.Object3D): void {
+        this.chunkObjects.set(object, LODLevel.HIGH_DETAIL);
     }
 
     /**
-     * Update the mesh representation for the given LOD level.
+     * Unregister an object from LOD management.
      */
-    private updateLODMeshes(body: CelestialBody, lod: LODLevel): void {
-        if (!body.mesh) return;
+    unregisterObject(object: THREE.Object3D): void {
+        this.macroObjects.delete(object);
+        this.chunkObjects.delete(object);
+    }
 
-        // TODO: Implement actual LOD mesh switching
-        // - Cache different geometry/material combinations
-        // - Switch visibility of different mesh representations
-        // - Handle material property changes (transparency, etc.)
+    private updateMacroLOD(): void {
+        const cameraPos = this.camera.position;
 
-        switch (lod) {
+        this.macroObjects.forEach((currentLevel, object) => {
+            const distance = cameraPos.distanceTo(object.position);
+            const newLevel = this.calculateMacroLOD(distance);
+
+            if (newLevel !== currentLevel) {
+                this.transitionMacroLOD(object, currentLevel, newLevel);
+                this.macroObjects.set(object, newLevel);
+            }
+        });
+    }
+
+    private updateChunkLOD(): void {
+        const cameraPos = this.camera.position;
+
+        this.chunkObjects.forEach((currentLevel, object) => {
+            const distance = cameraPos.distanceTo(object.position);
+            const newLevel = this.calculateChunkLOD(distance);
+
+            if (newLevel !== currentLevel) {
+                this.transitionChunkLOD(object, currentLevel, newLevel);
+                this.chunkObjects.set(object, newLevel);
+            }
+        });
+    }
+
+    private calculateMacroLOD(distance: number): LODLevel {
+        if (distance <= LODThresholds.MACRO_HIGH) return LODLevel.HIGH_DETAIL;
+        if (distance <= LODThresholds.MACRO_MEDIUM) return LODLevel.MEDIUM_DETAIL;
+        if (distance <= LODThresholds.MACRO_LOW) return LODLevel.LOW_DETAIL;
+        return LODLevel.CULLED;
+    }
+
+    private calculateChunkLOD(distance: number): LODLevel {
+        if (distance <= LODThresholds.CHUNK_HIGH) return LODLevel.HIGH_DETAIL;
+        if (distance <= LODThresholds.CHUNK_MEDIUM) return LODLevel.MEDIUM_DETAIL;
+        if (distance <= LODThresholds.CHUNK_LOW) return LODLevel.LOW_DETAIL;
+        return LODLevel.CULLED;
+    }
+
+    private transitionMacroLOD(object: THREE.Object3D, from: LODLevel, to: LODLevel): void {
+        // TODO: Implement smooth macro LOD transitions
+        // - For galaxies/systems: switch between detailed models, billboards, and icons
+        // - Animate transitions with opacity/size changes
+
+        console.log(`Macro LOD transition for ${object.name || 'object'}: ${from} -> ${to}`);
+
+        switch (to) {
             case LODLevel.HIGH_DETAIL:
-                body.mesh.visible = true;
-                // Full detail mesh
+                object.visible = true;
+                // TODO: Show full geometry/materials
                 break;
-
             case LODLevel.MEDIUM_DETAIL:
-                body.mesh.visible = true;
-                // Medium detail mesh
+                object.visible = true;
+                // TODO: Show simplified geometry
                 break;
-
             case LODLevel.LOW_DETAIL:
-                body.mesh.visible = true;
-                // Low detail mesh
+                object.visible = true;
+                // TODO: Show billboard/icon
                 break;
-
-            case LODLevel.BILLBOARD:
-                body.mesh.visible = true;
-                // Billboard representation
-                break;
-
             case LODLevel.CULLED:
-                body.mesh.visible = false;
+                object.visible = false;
                 break;
         }
     }
 
-    // TODO: Implement chunk-based LOD for planets
-    // - Divide planet surfaces into chunks
-    // - Load/unload chunks based on distance and view frustum
-    // - Smooth transitions between chunk LOD levels
+    private transitionChunkLOD(object: THREE.Object3D, from: LODLevel, to: LODLevel): void {
+        // TODO: Implement smooth chunk LOD transitions
+        // - For planets: switch between full terrain, simplified meshes, and impostors
+        // - Handle terrain chunk loading/unloading
 
-    // TODO: Implement macro LOD for galaxy-scale objects
-    // - Cluster distant star systems into single representations
-    // - Use imposters or simplified models for far objects
-    // - Hierarchical culling for performance
-}
+        console.log(`Chunk LOD transition for ${object.name || 'object'}: ${from} -> ${to}`);
 
-/**
- * LOD level enumerations.
- */
-export enum LODLevel {
-    HIGH_DETAIL = 'high_detail',
-    MEDIUM_DETAIL = 'medium_detail',
-    LOW_DETAIL = 'low_detail',
-    BILLBOARD = 'billboard',
-    CULLED = 'culled'
+        switch (to) {
+            case LODLevel.HIGH_DETAIL:
+                object.visible = true;
+                // TODO: Load full terrain chunks
+                break;
+            case LODLevel.MEDIUM_DETAIL:
+                object.visible = true;
+                // TODO: Load medium-detail chunks
+                break;
+            case LODLevel.LOW_DETAIL:
+                object.visible = true;
+                // TODO: Show low-poly mesh or billboard
+                break;
+            case LODLevel.CULLED:
+                object.visible = false;
+                // TODO: Unload chunks
+                break;
+        }
+    }
+
+    // TODO: Add LOD prediction
+    // - Predict future LOD needs based on camera movement
+    // - Preload higher detail levels before they're needed
+
+    // TODO: Add LOD budgets
+    // - Limit number of high-detail objects
+    // - Prioritize important objects (player target, etc.)
+
+    // TODO: Add custom LOD representations
+    // - Allow objects to define their own LOD levels
+    // - Support procedural LOD generation
 }

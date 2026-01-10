@@ -1,8 +1,8 @@
 import { IModule } from '../interfaces/IModule';
 
 /**
- * Main Engine class that handles the game loop and manages all modules.
- * Provides a centralized way to initialize, update, and dispose of all systems.
+ * Main engine class that manages the game loop and all modules.
+ * Provides a centralized system for initializing, updating, and disposing of modules.
  */
 export class Engine {
     private modules: IModule[] = [];
@@ -11,7 +11,7 @@ export class Engine {
 
     /**
      * Add a module to the engine.
-     * Modules will be initialized and updated in the order they are added.
+     * @param module The module to add.
      */
     addModule(module: IModule): void {
         this.modules.push(module);
@@ -19,19 +19,17 @@ export class Engine {
 
     /**
      * Initialize all modules.
-     * Call this once before starting the game loop.
      */
     init(): void {
-        console.log('Initializing engine modules...');
+        console.log('Initializing engine...');
         for (const module of this.modules) {
             module.init();
         }
-        console.log('Engine initialization complete');
+        console.log('Engine initialized with', this.modules.length, 'modules');
     }
 
     /**
      * Start the game loop.
-     * This begins the requestAnimationFrame loop that updates all modules.
      */
     start(): void {
         if (this.isRunning) {
@@ -41,7 +39,7 @@ export class Engine {
 
         this.isRunning = true;
         this.lastTime = performance.now();
-        this.gameLoop();
+        this.loop();
         console.log('Engine started');
     }
 
@@ -55,25 +53,20 @@ export class Engine {
 
     /**
      * Dispose of all modules and clean up resources.
-     * Call this when shutting down the application.
      */
     dispose(): void {
-        console.log('Disposing engine modules...');
-        this.stop();
-
-        // Dispose modules in reverse order
-        for (let i = this.modules.length - 1; i >= 0; i--) {
-            this.modules[i].dispose();
+        console.log('Disposing engine...');
+        for (const module of this.modules) {
+            module.dispose();
         }
-
         this.modules = [];
-        console.log('Engine disposal complete');
+        console.log('Engine disposed');
     }
 
     /**
-     * Main game loop using requestAnimationFrame.
+     * Main game loop.
      */
-    private gameLoop = (): void => {
+    private loop = (): void => {
         if (!this.isRunning) return;
 
         const currentTime = performance.now();
@@ -81,32 +74,11 @@ export class Engine {
         this.lastTime = currentTime;
 
         // Update all modules
-        this.update(dt);
-
-        // Schedule next frame
-        requestAnimationFrame(this.gameLoop);
-    };
-
-    /**
-     * Update all modules with the given delta time.
-     */
-    private update(dt: number): void {
         for (const module of this.modules) {
             module.update(dt);
         }
-    }
 
-    /**
-     * Get the current running state of the engine.
-     */
-    getIsRunning(): boolean {
-        return this.isRunning;
-    }
-
-    /**
-     * Get the list of registered modules.
-     */
-    getModules(): readonly IModule[] {
-        return this.modules;
-    }
+        // Continue the loop
+        requestAnimationFrame(this.loop);
+    };
 }
