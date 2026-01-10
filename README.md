@@ -1,9 +1,5 @@
 # 🌌 Echoes of Arkanis
 
----
-
-## 🇬🇧 English Version
-
 **Echoes of Arkanis** is an ambitious open-universe space exploration game for the web, built on a **custom Three.js engine**.  
 Embark on an epic journey through massive galaxies, fully explorable planets, and seamless space combat.  
 
