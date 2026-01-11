@@ -1,13 +1,17 @@
 import * as THREE from 'three';
 import { IModule } from '../interfaces/IModule';
+import { Vector3Type, EulerType, PerspectiveCameraType, SceneType, Object3DType } from '../../engine/rendering/Renderer';
+import { FPSControls } from '../../engine/input/FPSControls';
+import { FlightControls } from '../../engine/input/FlightControls';
+import { InputManager } from '../../engine/input/InputManager';
 
 /**
- * Player State Machine manages player states: FPS on planet, spaceship, orbit, warp.
+ * Player State Machine manages player states: FPS, spaceship, orbit, warp.
  * Allows seamless switching between states.
  */
 export enum PlayerState {
+    FPS = 'fps',
     SPACESHIP = 'spaceship',
-    FPS_ON_PLANET = 'fps_on_planet',
     ORBIT = 'orbit',
     WARP = 'warp'
 }
@@ -39,32 +43,40 @@ export class FPSData {
 }
 
 export class OrbitData {
-    public targetBody?: THREE.Object3D;
+    public targetBody?: Object3DType;
     public orbitRadius: number = 1000;
 }
 
 export class WarpData {
     public warpFactor: number = 1;
-    public targetSystem?: THREE.Vector3;
+    public targetSystem?: Vector3Type;
 }
 
 export class PlayerStateMachine implements IModule {
     public playerData: PlayerData = new PlayerData();
-    private camera: THREE.Camera;
-    private scene: THREE.Scene;
+    private camera: PerspectiveCameraType;
+    private scene: SceneType;
+    private inputManager: InputManager;
+    private fpsControls?: FPSControls;
+    private flightControls?: FlightControls;
 
     // State handlers
     private stateHandlers: Map<PlayerState, IStateHandler> = new Map();
 
-    constructor(camera: THREE.Camera, scene: THREE.Scene) {
+    constructor(camera: PerspectiveCameraType, scene: SceneType, inputManager: InputManager) {
         this.camera = camera;
         this.scene = scene;
+        this.inputManager = inputManager;
+
+        // Initialize controls
+        this.fpsControls = new FPSControls(inputManager, camera as THREE.PerspectiveCamera);
+        this.flightControls = new FlightControls(inputManager, camera as THREE.PerspectiveCamera);
 
         // Initialize state handlers
-        this.stateHandlers.set(PlayerState.SPACESHIP, new SpaceshipStateHandler());
-        this.stateHandlers.set(PlayerState.FPS_ON_PLANET, new FPSStateHandler());
-        this.stateHandlers.set(PlayerState.ORBIT, new OrbitStateHandler());
-        this.stateHandlers.set(PlayerState.WARP, new WarpStateHandler());
+        this.stateHandlers.set(PlayerState.SPACESHIP, new SpaceshipStateHandler(this.flightControls));
+        this.stateHandlers.set(PlayerState.FPS, new FPSStateHandler(this.fpsControls));
+        this.stateHandlers.set(PlayerState.ORBIT, new OrbitStateHandler(this.flightControls));
+        this.stateHandlers.set(PlayerState.WARP, new WarpStateHandler(this.flightControls));
     }
 
     init(): void {
@@ -82,6 +94,8 @@ export class PlayerStateMachine implements IModule {
     dispose(): void {
         // Clean up state handlers
         this.stateHandlers.clear();
+        this.fpsControls = undefined;
+        this.flightControls = undefined;
     }
 
     /**
@@ -115,7 +129,7 @@ export class PlayerStateMachine implements IModule {
  */
 interface IStateHandler {
     enter(playerData: PlayerData): void;
-    update(playerData: PlayerData, dt: number, camera: THREE.Camera, scene: THREE.Scene): void;
+    update(playerData: PlayerData, dt: number, camera: PerspectiveCameraType, scene: SceneType): void;
     exit(playerData: PlayerData): void;
 }
 
@@ -123,6 +137,12 @@ interface IStateHandler {
  * Spaceship state handler.
  */
 class SpaceshipStateHandler implements IStateHandler {
+    private flightControls: FlightControls;
+
+    constructor(flightControls: FlightControls) {
+        this.flightControls = flightControls;
+    }
+
     enter(playerData: PlayerData): void {
         if (!playerData.spaceshipData) {
             playerData.spaceshipData = new SpaceshipData();
@@ -131,7 +151,9 @@ class SpaceshipStateHandler implements IStateHandler {
         // TODO: Enable spaceship controls
     }
 
-    update(playerData: PlayerData, dt: number, camera: THREE.Camera, scene: THREE.Scene): void {
+    update(playerData: PlayerData, dt: number, camera: PerspectiveCameraType, scene: SceneType): void {
+        // Only update flight controls if this is the active state
+        this.flightControls.update(dt);
         // TODO: Implement spaceship physics and controls
         // - Thrust, rotation, autopilot
         // - Collision detection
@@ -145,9 +167,15 @@ class SpaceshipStateHandler implements IStateHandler {
 }
 
 /**
- * FPS on planet state handler.
+ * FPS state handler.
  */
 class FPSStateHandler implements IStateHandler {
+    private fpsControls: FPSControls;
+
+    constructor(fpsControls: FPSControls) {
+        this.fpsControls = fpsControls;
+    }
+
     enter(playerData: PlayerData): void {
         if (!playerData.fpsData) {
             playerData.fpsData = new FPSData();
@@ -157,7 +185,9 @@ class FPSStateHandler implements IStateHandler {
         // TODO: Add gravity and collision
     }
 
-    update(playerData: PlayerData, dt: number, camera: THREE.Camera, scene: THREE.Scene): void {
+    update(playerData: PlayerData, dt: number, camera: PerspectiveCameraType, scene: SceneType): void {
+        // Only update FPS controls if this is the active state
+        this.fpsControls.update(dt);
         // TODO: Implement FPS movement
         // - Walking, jumping
         // - Terrain interaction
@@ -174,6 +204,12 @@ class FPSStateHandler implements IStateHandler {
  * Orbit state handler.
  */
 class OrbitStateHandler implements IStateHandler {
+    private flightControls: FlightControls;
+
+    constructor(flightControls: FlightControls) {
+        this.flightControls = flightControls;
+    }
+
     enter(playerData: PlayerData): void {
         if (!playerData.orbitData) {
             playerData.orbitData = new OrbitData();
@@ -182,7 +218,9 @@ class OrbitStateHandler implements IStateHandler {
         // TODO: Calculate stable orbit
     }
 
-    update(playerData: PlayerData, dt: number, camera: THREE.Camera, scene: THREE.Scene): void {
+    update(playerData: PlayerData, dt: number, camera: PerspectiveCameraType, scene: SceneType): void {
+        // Only update flight controls if this is the active state
+        this.flightControls.update(dt);
         // TODO: Implement orbital mechanics
         // - Maintain orbit around target body
         // - Adjust orbit parameters
@@ -198,6 +236,12 @@ class OrbitStateHandler implements IStateHandler {
  * Warp state handler.
  */
 class WarpStateHandler implements IStateHandler {
+    private flightControls: FlightControls;
+
+    constructor(flightControls: FlightControls) {
+        this.flightControls = flightControls;
+    }
+
     enter(playerData: PlayerData): void {
         if (!playerData.warpData) {
             playerData.warpData = new WarpData();
@@ -206,7 +250,9 @@ class WarpStateHandler implements IStateHandler {
         // TODO: Visual effects for warp
     }
 
-    update(playerData: PlayerData, dt: number, camera: THREE.Camera, scene: THREE.Scene): void {
+    update(playerData: PlayerData, dt: number, camera: PerspectiveCameraType, scene: SceneType): void {
+        // Only update flight controls if this is the active state
+        this.flightControls.update(dt);
         // TODO: Implement warp travel
         // - FTL movement between systems
         // - Warp factor adjustments

@@ -1,6 +1,14 @@
 import { IModule } from '../core/Module';
 
 /**
+ * Input modes for different control schemes.
+ */
+export enum InputMode {
+    FPS,
+    Spaceship
+}
+
+/**
  * Manages user input from keyboard, mouse, and gamepad.
  * This replaces Three.js input handling.
  */
@@ -8,6 +16,39 @@ export class InputManager implements IModule {
     private keyboardState: Map<string, boolean> = new Map();
     private mouseState: MouseState;
     private gamepadState: GamepadState;
+    private currentMode: InputMode = InputMode.FPS;
+
+    // Action mappings: action name -> array of key codes
+    private actionMappings: Map<InputMode, Map<string, string[]>> = new Map([
+        [InputMode.FPS, new Map([
+            ['moveForward', ['KeyW']],
+            ['moveBackward', ['KeyS']],
+            ['moveLeft', ['KeyA']],
+            ['moveRight', ['KeyD']],
+            ['jump', ['Space']],
+            ['crouch', ['KeyC']],
+        ])],
+        [InputMode.Spaceship, new Map([
+            ['thrust', ['KeyW']],
+            ['reverse', ['KeyS']],
+            ['strafeLeft', ['KeyA']],
+            ['strafeRight', ['KeyD']],
+            ['ascend', ['ShiftLeft']],
+            ['descend', ['ControlLeft']],
+        ])]
+    ]);
+
+    // Axis mappings: axis name -> source (e.g., 'mouseDeltaX', 'gamepadAxis0')
+    private axisMappings: Map<InputMode, Map<string, string>> = new Map([
+        [InputMode.FPS, new Map([
+            ['lookX', 'mouseDeltaX'],
+            ['lookY', 'mouseDeltaY'],
+        ])],
+        [InputMode.Spaceship, new Map([
+            ['lookX', 'mouseDeltaX'],
+            ['lookY', 'mouseDeltaY'],
+        ])]
+    ]);
 
     constructor() {
         this.mouseState = new MouseState();
@@ -77,6 +118,51 @@ export class InputManager implements IModule {
      */
     getGamepadState(): GamepadState {
         return this.gamepadState;
+    }
+
+    /**
+     * Set the current input mode.
+     * @param mode The input mode to set.
+     */
+    setInputMode(mode: InputMode): void {
+        this.currentMode = mode;
+    }
+
+    /**
+     * Check if an action is currently pressed.
+     * @param action The action name to check.
+     */
+    isActionPressed(action: string): boolean {
+        const modeMappings = this.actionMappings.get(this.currentMode);
+        if (!modeMappings) return false;
+
+        const keys = modeMappings.get(action);
+        if (!keys) return false;
+
+        return keys.some(key => this.isKeyPressed(key));
+    }
+
+    /**
+     * Get the value of an axis.
+     * @param axis The axis name to get.
+     */
+    getAxis(axis: string): number {
+        const modeMappings = this.axisMappings.get(this.currentMode);
+        if (!modeMappings) return 0;
+
+        const source = modeMappings.get(axis);
+        if (!source) return 0;
+
+        if (source === 'mouseDeltaX') {
+            return this.mouseState.deltaX;
+        } else if (source === 'mouseDeltaY') {
+            return this.mouseState.deltaY;
+        } else if (source.startsWith('gamepadAxis')) {
+            const axisIndex = parseInt(source.replace('gamepadAxis', ''));
+            return this.gamepadState.getAxis(axisIndex);
+        }
+
+        return 0;
     }
 
     private onKeyDown(event: KeyboardEvent): void {

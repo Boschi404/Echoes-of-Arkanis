@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { SceneType, Vector3Type, MeshType, Vector3, Mesh, SphereGeometry, MeshBasicMaterial } from '../../engine/rendering/Renderer';
 import { IModule } from '../interfaces/IModule';
 
 /**
@@ -7,12 +7,12 @@ import { IModule } from '../interfaces/IModule';
  * Includes scaffolding for a star system with placeholder meshes.
  */
 export class WorldManager implements IModule {
-    public scene: THREE.Scene;
+    public scene: SceneType;
 
     // Hierarchical coordinate system
-    private galaxyOrigin: THREE.Vector3 = new THREE.Vector3();
-    private currentSystemOrigin: THREE.Vector3 = new THREE.Vector3();
-    private currentPlanetOrigin: THREE.Vector3 = new THREE.Vector3();
+    private galaxyOrigin: Vector3Type = new Vector3();
+    private currentSystemOrigin: Vector3Type = new Vector3();
+    private currentPlanetOrigin: Vector3Type = new Vector3();
 
     // World data structures
     private galaxies: Galaxy[] = [];
@@ -21,10 +21,10 @@ export class WorldManager implements IModule {
     private currentPlanet: Planet | null = null;
 
     // Placeholder meshes for scaffolding
-    private starMesh: THREE.Mesh | null = null;
-    private planetMesh: THREE.Mesh | null = null;
+    private starMesh: MeshType | null = null;
+    private planetMesh: MeshType | null = null;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: SceneType) {
         this.scene = scene;
     }
 
@@ -72,7 +72,7 @@ export class WorldManager implements IModule {
      * @param worldPos World position vector.
      * @returns Hierarchical coordinates.
      */
-    worldToHierarchical(worldPos: THREE.Vector3): HierarchicalCoords {
+    worldToHierarchical(worldPos: Vector3Type): HierarchicalCoords {
         // TODO: Implement proper hierarchical coordinate conversion
         // For now, return simplified coordinates
         return {
@@ -88,7 +88,7 @@ export class WorldManager implements IModule {
      * @param coords Hierarchical coordinates.
      * @returns World position vector.
      */
-    hierarchicalToWorld(coords: HierarchicalCoords): THREE.Vector3 {
+    hierarchicalToWorld(coords: HierarchicalCoords): Vector3Type {
         // TODO: Implement proper hierarchical coordinate conversion
         // For now, return simplified world position
         return coords.planet.clone();
@@ -98,7 +98,7 @@ export class WorldManager implements IModule {
      * Set the floating origin to a new position.
      * @param newOrigin New origin position.
      */
-    setFloatingOrigin(newOrigin: THREE.Vector3): void {
+    setFloatingOrigin(newOrigin: Vector3Type): void {
         // TODO: Implement floating origin
         // - Move all world objects relative to new origin
         // - Update coordinate systems
@@ -111,14 +111,14 @@ export class WorldManager implements IModule {
         // Create example galaxy
         const galaxy: Galaxy = {
             name: 'Milky Way',
-            position: new THREE.Vector3(0, 0, 0),
+            position: new Vector3(0, 0, 0),
             systems: []
         };
 
         // Create example star system
         const starSystem: StarSystem = {
             name: 'Solar System',
-            position: new THREE.Vector3(0, 0, 0),
+            position: new Vector3(0, 0, 0),
             star: {
                 name: 'Sun',
                 radius: 1000,
@@ -129,9 +129,9 @@ export class WorldManager implements IModule {
         };
 
         // Create star mesh (placeholder)
-        const starGeometry = new THREE.SphereGeometry(starSystem.star.radius, 32, 32);
-        const starMaterial = new THREE.MeshBasicMaterial({ color: starSystem.star.color });
-        this.starMesh = new THREE.Mesh(starGeometry, starMaterial);
+        const starGeometry = new SphereGeometry(starSystem.star.radius, 32, 32);
+        const starMaterial = new MeshBasicMaterial({ color: starSystem.star.color });
+        this.starMesh = new Mesh(starGeometry, starMaterial);
         this.starMesh.position.copy(starSystem.position);
         this.scene.add(this.starMesh);
         starSystem.star.mesh = this.starMesh;
@@ -148,9 +148,9 @@ export class WorldManager implements IModule {
         };
 
         // Create planet mesh (placeholder)
-        const planetGeometry = new THREE.SphereGeometry(planet.radius, 16, 16);
-        const planetMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-        this.planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+        const planetGeometry = new SphereGeometry(planet.radius, 16, 16);
+        const planetMaterial = new MeshBasicMaterial({ color: 0x0000ff });
+        this.planetMesh = new Mesh(planetGeometry, planetMaterial);
         this.planetMesh.position.set(planet.distance, 0, 0);
         this.scene.add(this.planetMesh);
         planet.mesh = this.planetMesh;
@@ -198,21 +198,21 @@ export class WorldManager implements IModule {
 
 // Data structures for hierarchical world
 export interface HierarchicalCoords {
-    galaxy: THREE.Vector3;
-    system: THREE.Vector3;
-    planet: THREE.Vector3;
-    chunk: THREE.Vector3;
+    galaxy: Vector3Type;
+    system: Vector3Type;
+    planet: Vector3Type;
+    chunk: Vector3Type;
 }
 
 export interface Galaxy {
     name: string;
-    position: THREE.Vector3;
+    position: Vector3Type;
     systems: StarSystem[];
 }
 
 export interface StarSystem {
     name: string;
-    position: THREE.Vector3;
+    position: Vector3Type;
     star: Star;
     planets: Planet[];
 }
@@ -221,7 +221,7 @@ export interface Star {
     name: string;
     radius: number;
     color: number;
-    mesh: THREE.Mesh | null;
+    mesh: MeshType | null;
 }
 
 export interface Planet {
@@ -230,7 +230,7 @@ export interface Planet {
     distance: number;
     type: string;
     speed: number;
-    mesh: THREE.Mesh | null;
+    mesh: MeshType | null;
     moons: Moon[];
 }
 
@@ -239,5 +239,5 @@ export interface Moon {
     radius: number;
     distance: number;
     speed: number;
-    mesh: THREE.Mesh | null;
+    mesh: MeshType | null;
 }

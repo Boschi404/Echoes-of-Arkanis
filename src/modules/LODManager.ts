@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { IModule } from '../interfaces/IModule';
-import { WorldManager } from './WorldManager';
+import { WorldManager } from '../../engine/world/WorldManager';
 
 /**
  * LOD Manager provides scaffolding for Level of Detail systems.

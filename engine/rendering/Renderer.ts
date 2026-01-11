@@ -1,193 +1,94 @@
+import * as THREE from 'three';
 import { IModule } from '../core/Module';
 
-/**
- * Basic rendering interface for 3D graphics.
- * This replaces Three.js WebGLRenderer functionality.
- */
-export interface IRenderer {
-    /**
-     * Initialize the renderer with a canvas element.
-     * @param canvas The HTML canvas element to render to.
-     */
-    init(canvas: HTMLCanvasElement): void;
+// Export Three.js classes to isolate imports
+export { THREE };
+export const Scene = THREE.Scene;
+export const PerspectiveCamera = THREE.PerspectiveCamera;
+export const WebGLRenderer = THREE.WebGLRenderer;
+export const Vector3 = THREE.Vector3;
+export const Euler = THREE.Euler;
+export const Object3D = THREE.Object3D;
+export const Mesh = THREE.Mesh;
+export const SphereGeometry = THREE.SphereGeometry;
+export const BoxGeometry = THREE.BoxGeometry;
+export const MeshBasicMaterial = THREE.MeshBasicMaterial;
+export const AmbientLight = THREE.AmbientLight;
+export const HemisphereLight = THREE.HemisphereLight;
 
-    /**
-     * Set the viewport size.
-     * @param width Viewport width in pixels.
-     * @param height Viewport height in pixels.
-     */
-    setSize(width: number, height: number): void;
-
-    /**
-     * Clear the render target.
-     */
-    clear(): void;
-
-    /**
-     * Render a scene.
-     * @param scene The scene to render.
-     * @param camera The camera to use for rendering.
-     */
-    render(scene: IScene, camera: ICamera): void;
-
-    /**
-     * Dispose of renderer resources.
-     */
-    dispose(): void;
-}
+// Export types
+export type SceneType = THREE.Scene;
+export type PerspectiveCameraType = THREE.PerspectiveCamera;
+export type WebGLRendererType = THREE.WebGLRenderer;
+export type Vector3Type = THREE.Vector3;
+export type EulerType = THREE.Euler;
+export type Object3DType = THREE.Object3D;
+export type MeshType = THREE.Mesh;
+export type SphereGeometryType = THREE.SphereGeometry;
+export type MeshBasicMaterialType = THREE.MeshBasicMaterial;
+export type AmbientLightType = THREE.AmbientLight;
+export type HemisphereLightType = THREE.HemisphereLight;
 
 /**
- * Basic scene interface.
+ * Renderer class that encapsulates Three.js scene, camera, and renderer.
+ * Isolates Three.js functionality within this module.
  */
-export interface IScene {
-    /**
-     * Add an object to the scene.
-     * @param object The object to add.
-     */
-    add(object: IObject3D): void;
-
-    /**
-     * Remove an object from the scene.
-     * @param object The object to remove.
-     */
-    remove(object: IObject3D): void;
-
-    /**
-     * Get all objects in the scene.
-     */
-    getObjects(): IObject3D[];
-}
-
-/**
- * Basic camera interface.
- */
-export interface ICamera {
-    /**
-     * Get the projection matrix.
-     */
-    getProjectionMatrix(): Float32Array;
-
-    /**
-     * Get the view matrix.
-     */
-    getViewMatrix(): Float32Array;
-
-    /**
-     * Update the camera matrices.
-     */
-    updateMatrices(): void;
-}
-
-/**
- * Basic 3D object interface.
- */
-export interface IObject3D {
-    /**
-     * Position vector.
-     */
-    position: Float32Array;
-
-    /**
-     * Rotation quaternion.
-     */
-    rotation: Float32Array;
-
-    /**
-     * Scale vector.
-     */
-    scale: Float32Array;
-
-    /**
-     * Get the world matrix.
-     */
-    getWorldMatrix(): Float32Array;
-
-    /**
-     * Update the world matrix.
-     */
-    updateWorldMatrix(): void;
-}
-
-/**
- * Basic WebGL renderer implementation.
- * This is a simplified replacement for Three.js WebGLRenderer.
- */
-export class WebGLRenderer implements IRenderer, IModule {
-    private canvas: HTMLCanvasElement | null = null;
-    private gl: WebGLRenderingContext | null = null;
-    private width: number = 800;
-    private height: number = 600;
+export class Renderer implements IModule {
+    public scene!: THREE.Scene;
+    public camera!: THREE.PerspectiveCamera;
+    public renderer!: THREE.WebGLRenderer;
 
     init(): void {
-        console.log('Initializing WebGL Renderer...');
-        // Renderer initialization will be done in init() method with canvas
-    }
+        // Create scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x000000);
 
-    initWithCanvas(canvas: HTMLCanvasElement): void {
-        this.canvas = canvas;
-        this.gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext;
+        // Create camera
+        this.camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.01,
+            10000000
+        );
 
-        if (!this.gl) {
-            throw new Error('WebGL not supported');
-        }
+        // Create renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(this.renderer.domElement);
 
-        // Basic WebGL setup
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.depthFunc(this.gl.LEQUAL);
+        // Add basic lighting
+        const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+        this.scene.add(ambient);
 
-        console.log('WebGL Renderer initialized');
-    }
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.6);
+        this.scene.add(hemi);
 
-    setSize(width: number, height: number): void {
-        this.width = width;
-        this.height = height;
-
-        if (this.canvas) {
-            this.canvas.width = width;
-            this.canvas.height = height;
-        }
-
-        if (this.gl) {
-            this.gl.viewport(0, 0, width, height);
-        }
-    }
-
-    clear(): void {
-        if (this.gl) {
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        }
-    }
-
-    render(scene: IScene, camera: ICamera): void {
-        if (!this.gl) {
-            return;
-        }
-
-        this.clear();
-
-        // Basic rendering loop - this would be expanded with actual shader programs
-        // For now, this is a placeholder that demonstrates the structure
-        const objects = scene.getObjects();
-
-        for (const object of objects) {
-            // Placeholder for actual rendering logic
-            // In a full implementation, this would:
-            // 1. Use shader programs
-            // 2. Set uniforms (projection, view, model matrices)
-            // 3. Bind buffers and draw
-            console.log('Rendering object at:', object.position);
-        }
+        // Handle window resize
+        window.addEventListener('resize', this.onWindowResize.bind(this), false);
     }
 
     update(dt: number): void {
-        // Renderer update logic if needed
+        // Render the scene
+        this.renderer.render(this.scene, this.camera);
     }
 
     dispose(): void {
-        if (this.gl) {
-            // Clean up WebGL resources
-            console.log('Disposing WebGL Renderer');
+        // Remove renderer from DOM
+        if (this.renderer.domElement.parentNode) {
+            this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
         }
+
+        // Dispose of Three.js resources
+        this.renderer.dispose();
+        this.scene.clear();
+
+        window.removeEventListener('resize', this.onWindowResize.bind(this));
+    }
+
+    private onWindowResize(): void {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 }

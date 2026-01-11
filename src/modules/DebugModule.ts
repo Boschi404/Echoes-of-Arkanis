@@ -1,4 +1,5 @@
 import { IModule } from '../interfaces/IModule';
+import { GAME_VERSION } from '../GameVersion';
 
 /**
  * Debug Module provides debugging and tooling support.
@@ -128,8 +129,29 @@ class PerformanceMonitor {
  */
 class DebugUI {
     private debugDiv: HTMLDivElement | null = null;
+    private versionDiv: HTMLDivElement | null = null;
 
     init(): void {
+        // Version display - always visible
+        this.versionDiv = document.createElement('div');
+        this.versionDiv.id = 'version-ui';
+        this.versionDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: block;
+        `;
+        this.versionDiv.textContent = `GAME_VERSION: ${GAME_VERSION}`;
+        document.body.appendChild(this.versionDiv);
+
+        // Debug info display - toggleable
         this.debugDiv = document.createElement('div');
         this.debugDiv.id = 'debug-ui';
         this.debugDiv.style.cssText = `
@@ -167,6 +189,9 @@ class DebugUI {
     }
 
     dispose(): void {
+        if (this.versionDiv && this.versionDiv.parentNode) {
+            this.versionDiv.parentNode.removeChild(this.versionDiv);
+        }
         if (this.debugDiv && this.debugDiv.parentNode) {
             this.debugDiv.parentNode.removeChild(this.debugDiv);
         }
