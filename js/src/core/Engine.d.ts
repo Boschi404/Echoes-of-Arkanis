@@ -1,4 +1,4 @@
-import { IModule } from '../interfaces/IModule';
+import { IModule } from '../interfaces/IModule.js';
 /**
  * Main engine class that manages the game loop and all modules.
  * Provides a centralized system for initializing, updating, and disposing of modules.

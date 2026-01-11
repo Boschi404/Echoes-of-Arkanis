@@ -1,21 +1,27 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
-    "lib": ["ES2020", "DOM"],
-    "outDir": "./js",
-    "rootDir": ".",
-    "strict": true,
+    "target": "ES2020",                     // supporta le funzionalità moderne
+    "module": "ESNext",                     // per import/export nativo
+    "lib": ["ES2020", "DOM"],               // compatibilità browser + ES2020
+    "outDir": "./js",                        // dove finiscono i file compilati
+    "rootDir": ".",                           // root include tutto (src + engine)
+    "strict": true,                          // attiva tutti i controlli stretti
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "declaration": true,                     // genera file .d.ts
+    "declarationMap": true,                  // map per file .d.ts
+    "sourceMap": true                        // map per debug nel browser
   },
-  "include": ["src/**/*", "engine/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*",
+    "engine/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "js"
+  ]
 }

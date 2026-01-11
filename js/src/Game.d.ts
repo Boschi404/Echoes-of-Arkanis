@@ -1,4 +1,4 @@
-import { Engine } from '../engine/core/Engine';
+import { Engine } from '../engine/core/Engine.js';
 /**
  * Game class that encapsulates the creation and management of all game modules.
  * This class is responsible for setting up the game logic and adding modules to the engine.

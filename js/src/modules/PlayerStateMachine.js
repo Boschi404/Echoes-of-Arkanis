@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { FPSControls } from '../../engine/input/FPSControls';
-import { FlightControls } from '../../engine/input/FlightControls';
+import { FPSControls } from '../../engine/input/FPSControls.js';
+import { FlightControls } from '../../engine/input/FlightControls.js';
 /**
  * Player State Machine manages player states: FPS, spaceship, orbit, warp.
  * Allows seamless switching between states.

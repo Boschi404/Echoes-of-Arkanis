@@ -1,5 +1,5 @@
-import { Engine } from '../engine/core/Engine';
-import { Game } from './Game';
+import { Engine } from '../engine/core/Engine.js';
+import { Game } from './Game.js';
 
 /**
  * Main entry point for the space exploration game engine.

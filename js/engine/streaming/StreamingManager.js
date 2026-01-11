@@ -1,4 +1,4 @@
-import { LODLevel, LODThresholds } from '../../src/modules/LODManager';
+import { LODLevel, LODThresholds } from '../LODManager.js';
 import { Vector3D } from '../world/FloatingOrigin';
 /**
  * Streaming Manager handles world streaming decisions for infinite worlds.

@@ -1,5 +1,5 @@
-import { Renderer } from '../../engine/rendering/Renderer';
-import { IModule } from '../interfaces/IModule';
+import { Renderer } from '../../engine/rendering/Renderer.js';
+import { IModule } from '../interfaces/IModule.js';
 
 /**
  * Rendering module that uses the isolated Renderer.

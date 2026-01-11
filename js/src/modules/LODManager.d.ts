@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { IModule } from '../interfaces/IModule';
-import { WorldManager } from '../../engine/world/WorldManager';
+import { IModule } from '../interfaces/IModule.js';
+import { WorldManager } from '../../engine/world/WorldManager.js';
 /**
  * LOD Manager provides scaffolding for Level of Detail systems.
  * Handles macro LOD for systems/galaxies and chunk LOD for planets.

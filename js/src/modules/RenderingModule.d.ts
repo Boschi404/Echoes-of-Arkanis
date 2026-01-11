@@ -1,4 +1,4 @@
-import { IModule } from '../interfaces/IModule';
+import { IModule } from '../interfaces/IModule.js';
 /**
  * Rendering module that uses the isolated Renderer.
  * Provides access to scene, camera, and renderer for other modules.

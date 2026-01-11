@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { IModule } from '../interfaces/IModule';
-import { Vector3Type, EulerType, PerspectiveCameraType, SceneType, Object3DType } from '../../engine/rendering/Renderer';
-import { FPSControls } from '../../engine/input/FPSControls';
-import { FlightControls } from '../../engine/input/FlightControls';
-import { InputManager } from '../../engine/input/InputManager';
+import { IModule } from '../interfaces/IModule.js';
+import { Vector3Type, EulerType, PerspectiveCameraType, SceneType, Object3DType } from '../../engine/rendering/Renderer.js';
+import { FPSControls } from '../../engine/input/FPSControls.js';
+import { FlightControls } from '../../engine/input/FlightControls.js';
+import { InputManager } from '../../engine/input/InputManager.js';
 
 /**
  * Player State Machine manages player states: FPS, spaceship, orbit, warp.

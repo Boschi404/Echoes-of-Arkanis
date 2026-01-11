@@ -1,11 +1,11 @@
-import { Engine } from '../engine/core/Engine';
-import { RenderingModule } from './modules/RenderingModule';
-import { WorldManager } from '../engine/world/WorldManager';
-import { PlayerStateMachine } from './modules/PlayerStateMachine';
-import { LODManager } from './modules/LODManager';
-import { StreamingManager } from '../engine/streaming/StreamingManager';
-import { InputManager } from '../engine/input/InputManager';
-import { DebugModule } from './modules/DebugModule';
+import { Engine } from '../engine/core/Engine.js';
+import { RenderingModule } from './modules/RenderingModule.js';
+import { WorldManager } from '../engine/world/WorldManager.js';
+import { PlayerStateMachine } from './modules/PlayerStateMachine.js';
+import { LODManager } from './modules/LODManager.js';
+import { StreamingManager } from '../engine/streaming/StreamingManager.js';
+import { InputManager } from '../engine/input/InputManager.js';
+import { DebugModule } from './modules/DebugModule.js';
 
 /**
  * Game class that encapsulates the creation and management of all game modules.

@@ -1,4 +1,4 @@
-import { IModule } from '../interfaces/IModule';
+import { IModule } from '../interfaces/IModule.js';
 /**
  * Input Manager handles all input events.
  * Provides a centralized way to manage keyboard, mouse, and other inputs.
