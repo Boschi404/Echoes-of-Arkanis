@@ -1,34 +1,16 @@
 import { Engine } from '../engine/core/Engine';
-import { RenderingModule } from './modules/RenderingModule';
-import { WorldManager } from '../engine/world/WorldManager';
-import { PlayerStateMachine } from './modules/PlayerStateMachine';
-import { LODManager } from './modules/LODManager';
-import { InputManager } from '../engine/input/InputManager';
-import { DebugModule } from './modules/DebugModule';
+import { Game } from './Game';
 
 /**
  * Main entry point for the space exploration game engine.
- * Instantiates the engine, adds modules, initializes the game, and starts the game loop.
+ * Creates the engine, sets up the game, and starts the game loop.
  */
 function main(): void {
     // Create the engine
     const engine = new Engine();
 
-    // Create modules
-    const renderingModule = new RenderingModule();
-    const worldManager = new WorldManager();
-    const playerStateMachine = new PlayerStateMachine(renderingModule.camera, renderingModule.scene);
-    const lodManager = new LODManager(renderingModule.camera, worldManager);
-    const inputManager = new InputManager();
-    const debugModule = new DebugModule();
-
-    // Register modules to the engine
-    engine.registerModule(renderingModule);
-    engine.registerModule(worldManager);
-    engine.registerModule(playerStateMachine);
-    engine.registerModule(lodManager);
-    engine.registerModule(inputManager);
-    engine.registerModule(debugModule);
+    // Create the game
+    const game = new Game(engine);
 
     // Initialize the engine and all modules
     engine.init();

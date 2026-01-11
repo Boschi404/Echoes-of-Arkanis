@@ -10,13 +10,13 @@ export class Engine {
     private lastTime: number = 0;
 
     /**
-     * Register a module with the engine.
+     * Add a module to the engine.
      * @param name Unique name for the module.
      * @param module The module instance.
      */
-    registerModule(name: string, module: IModule): void {
+    addModule(name: string, module: IModule): void {
         if (this.modules.has(name)) {
-            throw new Error(`Module '${name}' is already registered.`);
+            throw new Error(`Module '${name}' is already added.`);
         }
         this.modules.set(name, module);
     }
@@ -116,6 +116,21 @@ export class Engine {
         // Schedule next frame
         requestAnimationFrame(this.loop);
     };
+
+    /**
+     * Update all modules with the given delta time.
+     * @param dt Delta time in seconds.
+     */
+    update(dt: number): void {
+        for (const [name, module] of this.modules) {
+            try {
+                module.update(dt);
+            } catch (error) {
+                console.error(`Error updating module '${name}':`, error);
+                // Continue with other modules even if one fails
+            }
+        }
+    }
 
     /**
      * Dispose of all modules and clean up resources.
