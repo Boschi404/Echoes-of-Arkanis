@@ -1,0 +1,403 @@
+Folder PATH listing for volume Windows
+Volume serial number is 28C9-95D9
+C:.
+�   .antigravity
+�   index.html
+�   package-lock.json
+�   package.json
+�   project_structure.txt
+�   README.md
+�   TODO.md
+�   tsconfig.json
+�   
++---.vscode
+�       launch.json
+�       
++---css
+�       style.css
+�       
++---dist
+�   +---engine
+�   �   +---core
+�   �   �       Engine.d.ts
+�   �   �       Engine.d.ts.map
+�   �   �       Engine.js
+�   �   �       Engine.js.map
+�   �   �       GameLoop.d.ts
+�   �   �       GameLoop.d.ts.map
+�   �   �       GameLoop.js
+�   �   �       GameLoop.js.map
+�   �   �       Module.d.ts
+�   �   �       Module.d.ts.map
+�   �   �       Module.js
+�   �   �       Module.js.map
+�   �   �       
+�   �   +---input
+�   �   �       InputManager.d.ts
+�   �   �       InputManager.d.ts.map
+�   �   �       InputManager.js
+�   �   �       InputManager.js.map
+�   �   �       
+�   �   +---rendering
+�   �   �       Renderer.d.ts
+�   �   �       Renderer.d.ts.map
+�   �   �       Renderer.js
+�   �   �       Renderer.js.map
+�   �   �       
+�   �   +---world
+�   �           WorldManager.d.ts
+�   �           WorldManager.d.ts.map
+�   �           WorldManager.js
+�   �           WorldManager.js.map
+�   �           
+�   +---src
+�       �   Game.d.ts
+�       �   Game.d.ts.map
+�       �   Game.js
+�       �   Game.js.map
+�       �   GameVersion.d.ts
+�       �   GameVersion.d.ts.map
+�       �   GameVersion.js
+�       �   GameVersion.js.map
+�       �   main.d.ts
+�       �   main.d.ts.map
+�       �   main.js
+�       �   main.js.map
+�       �   
+�       +---core
+�       �       Engine.d.ts
+�       �       Engine.d.ts.map
+�       �       Engine.js
+�       �       Engine.js.map
+�       �       
+�       +---interfaces
+�       �       IModule.d.ts
+�       �       IModule.d.ts.map
+�       �       IModule.js
+�       �       IModule.js.map
+�       �       
+�       +---modules
+�               DebugModule.d.ts
+�               DebugModule.d.ts.map
+�               DebugModule.js
+�               DebugModule.js.map
+�               InputManager.d.ts
+�               InputManager.d.ts.map
+�               InputManager.js
+�               InputManager.js.map
+�               LODManager.d.ts
+�               LODManager.d.ts.map
+�               LODManager.js
+�               LODManager.js.map
+�               PlayerStateMachine.d.ts
+�               PlayerStateMachine.d.ts.map
+�               PlayerStateMachine.js
+�               PlayerStateMachine.js.map
+�               RenderingModule.d.ts
+�               RenderingModule.d.ts.map
+�               RenderingModule.js
+�               RenderingModule.js.map
+�               WorldManager.d.ts
+�               WorldManager.d.ts.map
+�               WorldManager.js
+�               WorldManager.js.map
+�               
++---echoes
+�   �   .gitignore
+�   �   index.html
+�   �   package-lock.json
+�   �   package.json
+�   �   tsconfig.json
+�   �   
+�   +---public
+�   �       vite.svg
+�   �       
+�   +---src
+�           counter.ts
+�           main.ts
+�           style.css
+�           typescript.svg
+�           
++---engine
+�   +---core
+�   �       Engine.d.ts
+�   �       Engine.d.ts.map
+�   �       Engine.js
+�   �       Engine.js.map
+�   �       Engine.ts
+�   �       GameLoop.d.ts
+�   �       GameLoop.d.ts.map
+�   �       GameLoop.js
+�   �       GameLoop.js.map
+�   �       GameLoop.ts
+�   �       Module.d.ts
+�   �       Module.d.ts.map
+�   �       Module.js
+�   �       Module.js.map
+�   �       Module.ts
+�   �       
+�   +---input
+�   �       FlightControls.d.ts
+�   �       FlightControls.d.ts.map
+�   �       FlightControls.js
+�   �       FlightControls.js.map
+�   �       FlightControls.ts
+�   �       FPSControls.d.ts
+�   �       FPSControls.d.ts.map
+�   �       FPSControls.js
+�   �       FPSControls.js.map
+�   �       FPSControls.ts
+�   �       InputManager.d.ts
+�   �       InputManager.d.ts.map
+�   �       InputManager.js
+�   �       InputManager.js.map
+�   �       InputManager.ts
+�   �       
+�   +---player
+�   +---rendering
+�   �       Renderer.d.ts
+�   �       Renderer.d.ts.map
+�   �       Renderer.js
+�   �       Renderer.js.map
+�   �       Renderer.ts
+�   �       
+�   +---streaming
+�   �       StreamingManager.d.ts
+�   �       StreamingManager.d.ts.map
+�   �       StreamingManager.js
+�   �       StreamingManager.js.map
+�   �       StreamingManager.ts
+�   �       
+�   +---world
+�           FloatingOrigin.d.ts
+�           FloatingOrigin.d.ts.map
+�           FloatingOrigin.js
+�           FloatingOrigin.js.map
+�           FloatingOrigin.ts
+�           Galaxy.d.ts
+�           Galaxy.d.ts.map
+�           Galaxy.js
+�           Galaxy.js.map
+�           Galaxy.ts
+�           Planet.d.ts
+�           Planet.d.ts.map
+�           Planet.js
+�           Planet.js.map
+�           Planet.ts
+�           StarSystem.d.ts
+�           StarSystem.d.ts.map
+�           StarSystem.js
+�           StarSystem.js.map
+�           StarSystem.ts
+�           WorldManager.d.ts
+�           WorldManager.d.ts.map
+�           WorldManager.js
+�           WorldManager.js.map
+�           WorldManager.ts
+�           
++---js
+�   �   Game.d.ts
+�   �   Game.d.ts.map
+�   �   Game.js
+�   �   Game.js.map
+�   �   GameVersion.d.ts
+�   �   GameVersion.d.ts.map
+�   �   GameVersion.js
+�   �   GameVersion.js.map
+�   �   main.d.ts
+�   �   main.d.ts.map
+�   �   main.js
+�   �   main.js.map
+�   �   
+�   +---core
+�   �       Engine.d.ts
+�   �       Engine.d.ts.map
+�   �       Engine.js
+�   �       Engine.js.map
+�   �       InputHandler.js
+�   �       SceneManager.js
+�   �       
+�   +---engine
+�   �   �   LODManager.js
+�   �   �   main.js
+�   �   �   
+�   �   +---core
+�   �   �       Engine.d.ts
+�   �   �       Engine.d.ts.map
+�   �   �       Engine.js
+�   �   �       Engine.js.map
+�   �   �       GameLoop.d.ts
+�   �   �       GameLoop.d.ts.map
+�   �   �       GameLoop.js
+�   �   �       GameLoop.js.map
+�   �   �       Module.d.ts
+�   �   �       Module.d.ts.map
+�   �   �       Module.js
+�   �   �       Module.js.map
+�   �   �       
+�   �   +---input
+�   �   �       FlightControls.d.ts
+�   �   �       FlightControls.d.ts.map
+�   �   �       FlightControls.js
+�   �   �       FlightControls.js.map
+�   �   �       FPSControls.d.ts
+�   �   �       FPSControls.d.ts.map
+�   �   �       FPSControls.js
+�   �   �       FPSControls.js.map
+�   �   �       InputManager.d.ts
+�   �   �       InputManager.d.ts.map
+�   �   �       InputManager.js
+�   �   �       InputManager.js.map
+�   �   �       
+�   �   +---rendering
+�   �   �       Renderer.d.ts
+�   �   �       Renderer.d.ts.map
+�   �   �       Renderer.js
+�   �   �       Renderer.js.map
+�   �   �       
+�   �   +---streaming
+�   �   �       StreamingManager.d.ts
+�   �   �       StreamingManager.d.ts.map
+�   �   �       StreamingManager.js
+�   �   �       StreamingManager.js.map
+�   �   �       
+�   �   +---world
+�   �           FloatingOrigin.d.ts
+�   �           FloatingOrigin.d.ts.map
+�   �           FloatingOrigin.js
+�   �           FloatingOrigin.js.map
+�   �           Galaxy.d.ts
+�   �           Galaxy.d.ts.map
+�   �           Galaxy.js
+�   �           Galaxy.js.map
+�   �           Planet.d.ts
+�   �           Planet.d.ts.map
+�   �           Planet.js
+�   �           Planet.js.map
+�   �           StarSystem.d.ts
+�   �           StarSystem.d.ts.map
+�   �           StarSystem.js
+�   �           StarSystem.js.map
+�   �           WorldManager.d.ts
+�   �           WorldManager.d.ts.map
+�   �           WorldManager.js
+�   �           WorldManager.js.map
+�   �           
+�   +---entities
+�   �       Environment.js
+�   �       Ship.js
+�   �       SolarSystem.js
+�   �       
+�   +---interfaces
+�   �       IModule.d.ts
+�   �       IModule.d.ts.map
+�   �       IModule.js
+�   �       IModule.js.map
+�   �       
+�   +---modules
+�   �       DebugModule.d.ts
+�   �       DebugModule.d.ts.map
+�   �       DebugModule.js
+�   �       DebugModule.js.map
+�   �       InputManager.d.ts
+�   �       InputManager.d.ts.map
+�   �       InputManager.js
+�   �       InputManager.js.map
+�   �       LODManager.d.ts
+�   �       LODManager.d.ts.map
+�   �       LODManager.js
+�   �       LODManager.js.map
+�   �       PlayerStateMachine.d.ts
+�   �       PlayerStateMachine.d.ts.map
+�   �       PlayerStateMachine.js
+�   �       PlayerStateMachine.js.map
+�   �       RenderingModule.d.ts
+�   �       RenderingModule.d.ts.map
+�   �       RenderingModule.js
+�   �       RenderingModule.js.map
+�   �       WorldManager.d.ts
+�   �       WorldManager.d.ts.map
+�   �       WorldManager.js
+�   �       WorldManager.js.map
+�   �       
+�   +---src
+�   �   �   Game.d.ts
+�   �   �   Game.d.ts.map
+�   �   �   Game.js
+�   �   �   Game.js.map
+�   �   �   GameVersion.d.ts
+�   �   �   GameVersion.d.ts.map
+�   �   �   GameVersion.js
+�   �   �   GameVersion.js.map
+�   �   �   main.d.ts
+�   �   �   main.d.ts.map
+�   �   �   main.js
+�   �   �   main.js.map
+�   �   �   
+�   �   +---core
+�   �   �       Engine.d.ts
+�   �   �       Engine.d.ts.map
+�   �   �       Engine.js
+�   �   �       Engine.js.map
+�   �   �       
+�   �   +---interfaces
+�   �   �       IModule.d.ts
+�   �   �       IModule.d.ts.map
+�   �   �       IModule.js
+�   �   �       IModule.js.map
+�   �   �       
+�   �   +---modules
+�   �           DebugModule.d.ts
+�   �           DebugModule.d.ts.map
+�   �           DebugModule.js
+�   �           DebugModule.js.map
+�   �           InputManager.d.ts
+�   �           InputManager.d.ts.map
+�   �           InputManager.js
+�   �           InputManager.js.map
+�   �           LODManager.d.ts
+�   �           LODManager.d.ts.map
+�   �           LODManager.js
+�   �           LODManager.js.map
+�   �           PlayerStateMachine.d.ts
+�   �           PlayerStateMachine.d.ts.map
+�   �           PlayerStateMachine.js
+�   �           PlayerStateMachine.js.map
+�   �           RenderingModule.d.ts
+�   �           RenderingModule.d.ts.map
+�   �           RenderingModule.js
+�   �           RenderingModule.js.map
+�   �           WorldManager.d.ts
+�   �           WorldManager.d.ts.map
+�   �           WorldManager.js
+�   �           WorldManager.js.map
+�   �           
+�   +---ui
+�   �       UIManager.js
+�   �       
+�   +---utils
+�           MathUtils.js
+�           ProceduralTextures.js
+�           
++---src
+�   �   Game.ts
+�   �   GameVersion.ts
+�   �   main.ts
+�   �   
+�   +---core
+�   �       Engine.ts
+�   �       
+�   +---interfaces
+�   �       IModule.ts
+�   �       
+�   +---modules
+�           DebugModule.ts
+�           InputManager.ts
+�           LODManager.ts
+�           PlayerStateMachine.ts
+�           RenderingModule.ts
+�           WorldManager.ts
+�           
++---textures
+    +---planets
+    +---stars
